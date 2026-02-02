@@ -1,0 +1,69 @@
+1. 核心架构与工程化
+技术栈：Vue3 (v3.5+) + TS + Vite + Vant4 + Pinia。
+
+组件拆分原则：
+
+src/components/base/：存放无业务逻辑的原子组件（如 C360Cell）。
+
+src/components/business/：存放强业务相关组件（如 TagManager, MobileEditor）。
+
+src/views/：仅作为容器进行数据下发和页面组合。
+
+环境隔离：所有环境变量必须通过 import.meta.env 调用，严禁在代码中硬编码 URL 或 AppID。
+
+2. 数据模型与 Mock 规范
+TS 类型强约束：所有字段必须遵循 C360FieldItem 接口：
+
+TypeScript
+
+interface Source {
+  origin: string; // 来源系统
+  value: any;
+  updateTime: string;
+}
+interface C360FieldItem {
+  key: string;
+  label: string;
+  displayValue: string; // 加权后的最终显示值
+  isConflict: boolean;
+  editable: boolean;
+  sources?: Source[];
+}
+Mock 驱动：在 .env.development 中默认开启 Mock。所有接口请求需封装在 src/api，且必须包含 800ms 随机延迟以验证全局 Loading 状态。
+
+3. 多端适配器 (Adapter Pattern)
+鉴权逻辑：由 src/adapters/authAdapter.ts 统一管理。
+
+WECOM 模式：静默获取 code 并调用后端换取 token。
+
+INTERNAL 模式：从 URL 提取 ticket 参数。
+
+MOCK 模式：跳过流程，直接发放 fake_token。
+
+环境嗅探：应用启动时需识别 navigator.userAgent，并将结果存入 Pinia。
+
+4. UI/UX 交互规范
+冲突处理：
+
+当 isConflict: true 时，字段右侧显示 van-tag (warning 类型，文字“多源”)。
+
+点击冲突字段必须弹出 van-action-sheet，使用列表或步骤条展示 sources 详情。
+
+编辑权限：
+
+默认所有字段为只读。
+
+仅 mobile 字段在 editable: true 时显示编辑图标，点击触发 MobileEditor 组件。
+
+大厂视觉：背景使用 #f7f8fa，卡片使用纯白 #ffffff 配 8px 圆角。信息布局需紧凑，适合侧边栏（350px 宽）查看。
+
+弹窗规范：
+- 所有弹窗必须设置 lock-scroll 属性，防止背景页面滚动。
+- 禁止在弹窗内再次弹出弹窗（禁止二次弹窗），详情信息应在当前弹窗内直接展示。
+
+5. 开发建议 (Cursor 指令偏好)
+在修改代码前，优先检查 src/types/index.ts 中的类型定义。
+
+新增功能时，请先创建 Mock 数据，确保在浏览器中预览正常。
+
+复杂逻辑请抽取为独立的 Composition API (Hooks)。
