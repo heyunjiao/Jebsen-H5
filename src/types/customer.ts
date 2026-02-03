@@ -28,8 +28,11 @@ export interface TagPool {
 export interface MobileItem {
   id: string // 电话号码唯一ID
   mobile: string // 电话号码
-  relationTagId?: string // 关系标签ID（从标签池选择）
-  relationTagName?: string // 关系标签名称
+  relationTagId?: string // 关系标签ID（从标签池选择，单选）
+  relationTagName?: string // 关系标签名称（单选）
+  relationTagIds?: string[] // 关系标签ID列表（向后兼容，已废弃，改为单选）
+  relationTagNames?: string[] // 关系标签名称列表（向后兼容，已废弃，改为单选）
+  businessTags?: string[] // 业务标签列表（多选：车主、送修人等）
   isPrimary: boolean // 是否为主号码
   source?: string // 来源系统
   updateTime?: string // 更新时间
@@ -60,7 +63,7 @@ export interface VehicleRelation {
   licensePlate?: string // 车牌号
   vin?: string // 车架号
   purchaseDate?: string // 购买日期
-  status: string // 状态：在售、已售、维修中等
+  status: string // 状态：自用、已售、维修中等
   source?: string // 来源系统
 }
 
@@ -102,6 +105,20 @@ export interface InsuranceInfo {
   amount?: number // 保险金额
 }
 
+// 保险记录类型
+export interface InsuranceRecord {
+  id: string
+  type: '交强险' | '商业险' | '第三者责任险' | '意外险' // 保险类型
+  amount: number // 保险金额（取整）
+  status: string // 状态：已生效、已过期、待续保、已退保等
+  company?: string // 保险公司
+  policyNo?: string // 保单号
+  startDate?: string // 保险开始日期
+  endDate?: string // 保险结束日期
+  purchaseDate?: string // 购买日期
+  source?: string // 来源系统
+}
+
 // 姓名+手机号冲突数据
 export interface NameMobileConflict {
   id: string
@@ -115,6 +132,7 @@ export interface NameMobileConflict {
 export interface ConflictResolution {
   selectedIds: string[] // 选中的冲突数据ID
   note?: string // 备注信息
+  action: 'merge' | 'keep' // 操作类型：merge-申请合并，keep-保持多条
 }
 
 // 预约信息类型
@@ -146,6 +164,36 @@ export interface PlatformSource {
   }
 }
 
+// 商机信息类型
+export interface Opportunity {
+  id: string
+  oneId?: string // OneID（可选）
+  type: string // 商机类型：维保到期、代金券到期、高价值客户、流失预警、复购机会、升级机会等
+  triggerRule: string // 触发规则
+  priority: '高' | '中' | '低' // 优先级
+  status: '待处理' | '处理中' | '已推送' | '已完成' // 状态
+  pushTarget?: string // 推送目标：bdc、wechat、crm等
+  pushStatus?: '待推送' | '成功' | '失败' // 推送状态
+  createTime: string // 创建时间
+  description?: string // 描述信息
+  source?: string // 来源系统
+}
+
+// 操作日志类型
+export interface OperationLog {
+  id: string
+  operator: string // 操作人姓名
+  operationType: string // 操作类型：人工更新、系统更新、数据合并等
+  operationTime: string // 操作时间
+  description?: string // 操作描述
+  details?: {
+    field?: string // 操作的字段
+    oldValue?: string | number // 旧值
+    newValue?: string | number // 新值
+    [key: string]: any // 其他详情
+  }
+}
+
 // 客户画像数据类型
 export interface CustomerProfile {
   id: string
@@ -169,6 +217,12 @@ export interface CustomerProfile {
   platformSources?: PlatformSource[] // 平台溯源信息
   // 预约信息
   appointments?: Appointment[] // 预约信息列表
+  // 最新操作信息（用于首页提示）
+  latestOperation?: {
+    operator: string // 操作人
+    operationType: string // 操作类型
+    operationTime: string // 操作时间
+  }
   // 注意：transactions、vehicles、assets 已迁移到独立接口，不再从此接口返回
   // 保留可选字段以保持向后兼容性（Mock 数据中可能仍包含）
   transactions?: TransactionRecord[] // 交易记录（已废弃，使用独立接口）

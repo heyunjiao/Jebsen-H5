@@ -1,24 +1,25 @@
 import { MockMethod } from 'vite-plugin-mock'
-import type { CustomerProfile, TagPool, MobileData, MobileItem, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, NameMobileConflict, Appointment, PlatformSource, InsuranceInfo } from '@/types/customer'
+import type { CustomerProfile, TagPool, MobileData, MobileItem, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, NameMobileConflict, Appointment, PlatformSource, InsuranceInfo, Opportunity, OperationLog, InsuranceRecord } from '@/types/customer'
+import { validateInsuranceRecords, normalizeInsuranceRecords } from './rules'
 
 // Mock 客户画像数据（包含冲突数据）
 const mockCustomerProfile: CustomerProfile = {
   id: 'C001',
   name: {
-    value: '张三',
+    value: '陈明',
     isConflict: true,
     sources: [
-      { origin: '官网注册', value: '张三', time: '2023-10-01 10:30:00' },
-      { origin: '线下门店', value: '张三丰', time: '2023-09-15 14:20:00' },
+      { origin: 'DMS', value: '陈明', time: '2025-10-01 10:30:00' },
+      { origin: 'BDC', value: '陈明华', time: '2025-09-15 14:20:00' },
     ],
   },
   age: {
     value: 35,
     isConflict: true,
     sources: [
-      { origin: '官网', value: 35, time: '2023-10-01 10:30:00' },
-      { origin: '线下门店', value: 38, time: '2023-09-15 14:20:00' },
-      { origin: '电话咨询', value: 36, time: '2023-09-20 09:15:00' },
+      { origin: 'DMS', value: 35, time: '2025-10-01 10:30:00' },
+      { origin: 'BDC', value: 38, time: '2025-09-15 14:20:00' },
+      { origin: 'CRM', value: 36, time: '2025-09-20 09:15:00' },
     ],
   },
   mobile: {
@@ -29,8 +30,9 @@ const mockCustomerProfile: CustomerProfile = {
         isPrimary: true,
         relationTagId: 'relation1',
         relationTagName: '本人',
-        source: '官网',
-        updateTime: '2023-10-01 10:30:00',
+        businessTags: ['车主'],
+        source: 'DMS',
+        updateTime: '2025-10-01 10:30:00',
       },
       {
         id: 'mobile2',
@@ -38,8 +40,9 @@ const mockCustomerProfile: CustomerProfile = {
         isPrimary: false,
         relationTagId: 'relation2',
         relationTagName: '配偶',
-        source: '线下门店',
-        updateTime: '2023-09-15 14:20:00',
+        businessTags: ['送修人'],
+        source: 'BDC',
+        updateTime: '2025-09-15 14:20:00',
       },
     ],
     isConflict: true,
@@ -49,26 +52,26 @@ const mockCustomerProfile: CustomerProfile = {
     value: '男',
     isConflict: true,
     sources: [
-      { origin: '官网注册', value: '男', time: '2023-10-01 10:30:00' },
-      { origin: '线下门店', value: '男', time: '2023-09-15 14:20:00' },
-      { origin: '电话咨询', value: '男', time: '2023-09-20 09:15:00' },
+      { origin: 'DMS', value: '男', time: '2025-10-01 10:30:00' },
+      { origin: 'BDC', value: '男', time: '2025-09-15 14:20:00' },
+      { origin: 'CRM', value: '男', time: '2025-09-20 09:15:00' },
     ],
   },
   city: {
-    value: '北京',
+    value: '上海',
     isConflict: true,
     sources: [
-      { origin: '官网注册', value: '北京', time: '2023-10-01 10:30:00' },
-      { origin: '线下门店', value: '上海', time: '2023-09-15 14:20:00' },
+      { origin: 'DMS', value: '上海', time: '2025-10-01 10:30:00' },
+      { origin: 'BDC', value: '上海', time: '2025-09-15 14:20:00' },
     ],
   },
   preferredCarModel: {
-    value: 'BMW 3系',
+    value: '911',
     isConflict: true,
     sources: [
-      { origin: '官网咨询', value: 'BMW 3系', time: '2023-10-01 10:30:00' },
-      { origin: '线下门店', value: 'BMW X3', time: '2023-09-15 14:20:00' },
-      { origin: '电话咨询', value: 'BMW 3系', time: '2023-09-20 09:15:00' },
+      { origin: 'POAS', value: '911', time: '2025-10-01 10:30:00' },
+      { origin: 'BDC', value: 'Macan', time: '2025-09-15 14:20:00' },
+      { origin: 'CRM', value: '911', time: '2025-09-20 09:15:00' },
     ],
     tags: ['高意向', '首购客户'],
   },
@@ -82,32 +85,32 @@ const mockCustomerProfile: CustomerProfile = {
     value: '钻石客户',
     isConflict: false,
     sources: [
-      { origin: 'CRM系统', value: '钻石客户', time: '2023-10-01 10:30:00' },
-      { origin: '在修不再包', value: '高价值商机', time: '2023-10-05 14:20:00' },
-      { origin: '在修不再包', value: '置换需求', time: '2023-10-08 09:15:00' },
+      { origin: 'CRM', value: '钻石客户', time: '2025-10-01 10:30:00' },
+      { origin: 'WWS', value: '高价值商机', time: '2025-10-05 14:20:00' },
+      { origin: 'WWS', value: '置换需求', time: '2025-10-08 09:15:00' },
     ],
   },
   segmentType: {
     value: 'VIP客户群',
     isConflict: false,
     sources: [
-      { origin: '数据分析系统', value: 'VIP客户群', time: '2023-10-01 10:30:00' },
-      { origin: '营销系统', value: '高价值客户群', time: '2023-10-05 14:20:00' },
-      { origin: 'CRM系统', value: '活跃客户群', time: '2023-10-08 09:15:00' },
+      { origin: 'C@P', value: 'VIP客户群', time: '2025-10-01 10:30:00' },
+      { origin: 'POAS', value: '高价值客户群', time: '2025-10-05 14:20:00' },
+      { origin: 'CRM', value: '活跃客户群', time: '2025-10-08 09:15:00' },
     ],
   },
   totalConsumption: {
     value: 1456200,
     isConflict: false,
     sources: [
-      { origin: '财务系统', value: 1456200, time: '2023-11-15 09:00:00' },
+      { origin: 'DMS', value: 1456200, time: '2025-11-15 09:00:00' },
     ],
   },
   customerType: {
     value: '个人',
     isConflict: false,
     sources: [
-      { origin: 'CRM系统', value: '个人', time: '2023-10-01 10:30:00' },
+      { origin: 'CRM', value: '个人', time: '2025-10-01 10:30:00' },
     ],
   },
   servicePreferences: {
@@ -117,122 +120,128 @@ const mockCustomerProfile: CustomerProfile = {
   nameMobileConflict: [
     {
       id: 'conflict1',
-      name: '张三',
+      name: '陈明',
       mobile: '13800138000',
-      origin: '官网注册',
-      updateTime: '2023-10-01 10:30:00',
+      origin: 'DMS',
+      updateTime: '2025-10-01 10:30:00',
     },
     {
       id: 'conflict2',
-      name: '张三丰',
+      name: '陈明华',
       mobile: '13800138001',
-      origin: '线下门店',
-      updateTime: '2023-09-15 14:20:00',
+      origin: 'BDC',
+      updateTime: '2025-09-15 14:20:00',
     },
   ] as NameMobileConflict[],
   // 是否是多源平台合并
   isMultiSource: true,
+  // 最新操作信息（用于首页提示）
+  latestOperation: {
+    operator: 'Rebecca Z.',
+    operationType: '人工更新',
+    operationTime: '2025-01-15 14:30:00',
+  },
   transactions: [
     {
       id: 'T001',
-      orderNo: 'ORD20231001001',
-      productName: 'BMW 3系 2023款',
-      amount: 320000,
+      orderNo: 'ORD20251001001',
+      productName: '911 2025款',
+      amount: 1450000,
       status: '已完成',
-      transactionTime: '2023-10-01 14:30:00',
-      source: '官网',
+      transactionTime: '2025-10-01 14:30:00',
+      source: 'DMS',
     },
     {
       id: 'T002',
-      orderNo: 'ORD20230915002',
-      productName: '车辆保养服务套餐',
-      amount: 1200,
+      orderNo: 'ORD20250915002',
+      productName: '保养服务套餐',
+      amount: 3200,
       status: '已完成',
-      transactionTime: '2023-09-15 10:20:00',
-      source: '线下门店',
+      transactionTime: '2025-09-15 10:20:00',
+      source: 'BDC',
     },
     {
       id: 'T003',
-      orderNo: 'ORD20230820003',
-      productName: 'BMW X5 2023款',
-      amount: 680000,
+      orderNo: 'ORD20250820003',
+      productName: 'Cayenne 2025款',
+      amount: 920000,
       status: '已完成',
-      transactionTime: '2023-08-20 16:45:00',
-      source: '线下门店',
+      transactionTime: '2025-08-20 16:45:00',
+      source: 'BDC',
     },
     {
       id: 'T004',
-      orderNo: 'ORD20230710004',
-      productName: '车辆维修服务',
-      amount: 3500,
+      orderNo: 'ORD20250710004',
+      productName: '维修服务',
+      amount: 8500,
       status: '已完成',
-      transactionTime: '2023-07-10 11:30:00',
-      source: '官网',
+      transactionTime: '2025-07-10 11:30:00',
+      source: 'DMS',
     },
     {
       id: 'T005',
-      orderNo: 'ORD20231115005',
-      productName: 'BMW 5系 2024款',
-      amount: 450000,
+      orderNo: 'ORD20251115005',
+      productName: 'Panamera 2025款',
+      amount: 980000,
       status: '待支付',
-      transactionTime: '2023-11-15 09:00:00',
-      source: '官网',
+      transactionTime: '2025-11-15 09:00:00',
+      source: 'DMS',
     },
     {
       id: 'T006',
-      orderNo: 'ORD20231025006',
-      productName: '车辆检测服务',
-      amount: 500,
+      orderNo: 'ORD20251025006',
+      productName: '检测服务',
+      amount: 800,
       status: '已完成',
-      transactionTime: '2023-10-25 14:20:00',
-      source: '线下门店',
+      transactionTime: '2025-10-25 14:20:00',
+      source: 'BDC',
     },
   ],
   vehicles: [
     {
       id: 'V001',
-      vehicleModel: 'BMW 3系 2023款',
-      licensePlate: '京A12345',
-      vin: 'LBVNU210X3K123456',
-      purchaseDate: '2023-10-01',
+      vehicleModel: '911 2025款',
+      licensePlate: '沪A12345',
+      vin: 'WP0AB2A99DS123456',
+      purchaseDate: '2025-10-01',
       status: '已售',
-      source: '官网',
+      source: 'DMS',
     },
     {
       id: 'V002',
-      vehicleModel: 'BMW X5 2023款',
-      licensePlate: '京B67890',
-      vin: '5UXKR0C50L9A12345',
-      purchaseDate: '2022-05-15',
+      vehicleModel: 'Cayenne 2025款',
+      licensePlate: '沪B67890',
+      vin: 'WP1AG2A99DS67890',
+      purchaseDate: '2025-05-15',
       status: '已售',
-      source: '线下门店',
+      source: 'BDC',
     },
     {
       id: 'V003',
-      vehicleModel: 'BMW 5系 2022款',
-      licensePlate: '京C11111',
-      vin: 'LBVNU210X2K111111',
-      purchaseDate: '2022-03-20',
+      vehicleModel: 'Panamera 2025款',
+      licensePlate: '沪C11111',
+      vin: 'WP0AF2A99NS11111',
+      purchaseDate: '2025-03-20',
       status: '已售',
-      source: '官网',
+      source: 'DMS',
     },
     {
       id: 'V004',
-      vehicleModel: 'BMW X3 2023款',
-      licensePlate: '京D22222',
-      vin: '5UXKR0C50L9A22222',
-      purchaseDate: '2023-06-10',
-      status: '在售',
-      source: '线下门店',
+      vehicleModel: 'Macan 2025款',
+      licensePlate: '沪D22222',
+      vin: 'WP1AA2A99DS22222',
+      purchaseDate: '2025-06-10',
+      status: '自用',
+      source: 'BDC',
     },
     {
       id: 'V005',
-      vehicleModel: 'BMW 1系 2023款',
-      licensePlate: '京E33333',
-      vin: 'LBVNU210X3K333333',
-      purchaseDate: '2023-04-05',
+      vehicleModel: 'Taycan 2025款',
+      licensePlate: '沪E33333',
+      vin: 'WP0AC2A99DS33333',
+      purchaseDate: '2025-04-05',
       status: '维修中',
-      source: '官网',
+      source: 'DMS',
     },
   ],
   assets: [
@@ -242,9 +251,9 @@ const mockCustomerProfile: CustomerProfile = {
       name: '购车代金券',
       amount: 5000,
       status: '未使用',
-      validFrom: '2023-10-01',
-      validTo: '2024-10-01',
-      source: '官网',
+      validFrom: '2025-10-01',
+      validTo: '2025-10-01',
+      source: '上海闵行店',
     },
     {
       id: 'A002',
@@ -252,9 +261,9 @@ const mockCustomerProfile: CustomerProfile = {
       name: '保养折扣券',
       discount: 0.8,
       status: '未使用',
-      validFrom: '2023-09-01',
-      validTo: '2024-09-01',
-      source: '线下门店',
+      validFrom: '2025-09-01',
+      validTo: '2025-09-01',
+      source: '上海浦东店',
     },
     {
       id: 'A003',
@@ -262,9 +271,9 @@ const mockCustomerProfile: CustomerProfile = {
       name: '维修代金券',
       amount: 2000,
       status: '未使用',
-      validFrom: '2024-01-01',
-      validTo: '2024-12-31',
-      source: '官网',
+      validFrom: '2025-01-01',
+      validTo: '2025-12-31',
+      source: '上海浦东店',
     },
     {
       id: 'A004',
@@ -272,9 +281,9 @@ const mockCustomerProfile: CustomerProfile = {
       name: '购车优惠券',
       discount: 0.95,
       status: '已使用',
-      validFrom: '2023-08-01',
-      validTo: '2023-12-31',
-      source: '官网',
+      validFrom: '2025-08-01',
+      validTo: '2025-12-31',
+      source: '上海闵行店',
     },
     {
       id: 'A005',
@@ -282,9 +291,9 @@ const mockCustomerProfile: CustomerProfile = {
       name: '检测代金券',
       amount: 300,
       status: '未使用',
-      validFrom: '2023-11-01',
-      validTo: '2024-11-01',
-      source: '线下门店',
+      validFrom: '2025-11-01',
+      validTo: '2025-11-01',
+      source: '上海浦东店',
     },
     {
       id: 'A006',
@@ -292,9 +301,9 @@ const mockCustomerProfile: CustomerProfile = {
       name: '维修折扣券',
       discount: 0.85,
       status: '未使用',
-      validFrom: '2023-10-15',
-      validTo: '2024-10-15',
-      source: '官网',
+      validFrom: '2025-10-15',
+      validTo: '2025-10-15',
+      source: '上海闵行店',
     },
     {
       id: 'A007',
@@ -302,9 +311,9 @@ const mockCustomerProfile: CustomerProfile = {
       name: '保养代金券',
       amount: 1000,
       status: '已过期',
-      validFrom: '2022-01-01',
-      validTo: '2023-01-01',
-      source: '线下门店',
+      validFrom: '2025-01-01',
+      validTo: '2025-01-01',
+      source: '上海浦东店',
     },
   ],
 }
@@ -358,74 +367,198 @@ const mockMaintenanceRecords = [
   {
     id: 'M001',
     serviceType: '定期保养',
-    serviceTime: '2024-01-15 10:30:00',
-    serviceStore: '北京朝阳4S店',
-    vehicleModel: 'BMW 3系 2023款',
+    serviceTime: '2025-01-15 10:30:00',
+    serviceStore: '上海闵行4S店',
+    vehicleModel: '911 2025款',
     amount: 1200,
     description: '更换机油、机滤、空滤，检查轮胎、刹车系统',
     status: '已完成',
     tags: ['定期保养', '质保期内'],
-    source: '官网',
+    source: 'DMS',
     insurance: {
       type: '商业险',
       company: '中国人保',
-      policyNo: 'PICC2024001234',
-      startDate: '2024-01-01',
-      endDate: '2025-01-01',
-      amount: 5000,
+      policyNo: 'PICC202501150012346',
+      startDate: '2025-01-15',
+      endDate: '2026-01-14',
+      amount: 4850,
     } as InsuranceInfo,
   },
   {
     id: 'M002',
     serviceType: '紧急维修',
-    serviceTime: '2023-12-20 14:20:00',
-    serviceStore: '北京朝阳4S店',
-    vehicleModel: 'BMW 3系 2023款',
+    serviceTime: '2025-12-20 14:20:00',
+    serviceStore: '上海浦东4S店',
+    vehicleModel: '911 2025款',
     amount: 3500,
     description: '更换前保险杠，修复前大灯',
     status: '已完成',
     tags: ['紧急维修', '质保期内'],
-    source: '线下门店',
+    source: 'BDC',
     insurance: {
       type: '交强险+商业险',
       company: '平安保险',
-      policyNo: 'PAIC2023005678',
-      startDate: '2023-12-01',
-      endDate: '2024-12-01',
+      policyNo: 'PAIC202412150056789',
+      startDate: '2024-12-15',
+      endDate: '2025-12-14',
       amount: 6800,
     } as InsuranceInfo,
   },
   {
     id: 'M003',
     serviceType: '定期保养',
-    serviceTime: '2023-10-05 09:15:00',
-    serviceStore: '北京朝阳4S店',
-    vehicleModel: 'BMW 3系 2023款',
+    serviceTime: '2025-10-05 09:15:00',
+    serviceStore: '上海闵行4S店',
+    vehicleModel: '911 2025款',
     amount: 1500,
     description: '更换机油、机滤、空滤、空调滤芯，检查电瓶',
     status: '已完成',
     tags: ['定期保养', '质保期内', '满意客户'],
-    source: '官网',
+    source: 'DMS',
     insurance: {
       type: '商业险',
       company: '中国人保',
-      policyNo: 'PICC2023001234',
-      startDate: '2023-10-01',
-      endDate: '2024-10-01',
+      policyNo: 'PICC2025001234',
+      startDate: '2025-10-01',
+      endDate: '2025-10-01',
       amount: 5000,
     } as InsuranceInfo,
   },
   {
     id: 'M004',
     serviceType: '检测服务',
-    serviceTime: '2023-08-18 11:00:00',
-    serviceStore: '北京朝阳4S店',
-    vehicleModel: 'BMW 3系 2023款',
+    serviceTime: '2025-08-18 11:00:00',
+    serviceStore: '上海浦东4S店',
+    vehicleModel: '911 2025款',
     amount: 0,
     description: '免费检测：发动机、变速箱、制动系统',
     status: '已完成',
     tags: ['质保期内'],
-    source: '官网',
+    source: 'DMS',
+  },
+]
+
+// Mock 保险记录数据（原始数据，将通过规则验证和规范化）
+const mockInsuranceRecordsRaw: Partial<InsuranceRecord>[] = [
+  {
+    id: 'I001',
+    type: '交强险',
+    amount: 950,
+    status: '已生效',
+    company: '中国人保',
+    policyNo: 'PICC202501010012345',
+    startDate: '2025-01-15',
+    endDate: '2026-01-14',
+    purchaseDate: '2024-12-20',
+    source: 'DMS',
+  },
+  {
+    id: 'I002',
+    type: '商业险',
+    amount: 4850,
+    status: '已生效',
+    company: '中国人保',
+    policyNo: 'PICC202501150012346',
+    startDate: '2025-01-15',
+    endDate: '2026-01-14',
+    purchaseDate: '2024-12-20',
+    source: 'DMS',
+  },
+  {
+    id: 'I003',
+    type: '第三者责任险',
+    amount: 1200,
+    status: '已生效',
+    company: '平安保险',
+    policyNo: 'PAIC202501010056789',
+    startDate: '2025-01-15',
+    endDate: '2026-01-14',
+    purchaseDate: '2024-12-25',
+    source: 'BDC',
+  },
+  {
+    id: 'I004',
+    type: '意外险',
+    amount: 680,
+    status: '已生效',
+    company: '太平洋保险',
+    policyNo: 'CPIC202501150090123',
+    startDate: '2025-01-15',
+    endDate: '2026-01-14',
+    purchaseDate: '2024-12-28',
+    source: 'CRM',
+  },
+  {
+    id: 'I005',
+    type: '交强险',
+    amount: 950,
+    status: '已过期',
+    company: '中国人保',
+    policyNo: 'PICC202401010012344',
+    startDate: '2024-01-15',
+    endDate: '2025-01-14',
+    purchaseDate: '2023-12-20',
+    source: 'DMS',
+  },
+  {
+    id: 'I006',
+    type: '商业险',
+    amount: 5200,
+    status: '待续保',
+    company: '平安保险',
+    policyNo: 'PAIC202406010056788',
+    startDate: '2024-06-15',
+    endDate: '2025-06-14',
+    purchaseDate: '2024-05-25',
+    source: 'BDC',
+  },
+]
+
+// 使用规则验证和规范化保险记录数据
+let mockInsuranceRecords: InsuranceRecord[]
+try {
+  // 规范化数据（确保金额取整、格式正确等）
+  mockInsuranceRecords = normalizeInsuranceRecords(mockInsuranceRecordsRaw)
+  
+  // 验证规范化后的数据
+  if (!validateInsuranceRecords(mockInsuranceRecords)) {
+    throw new Error('保险记录数据验证失败')
+  }
+  
+  console.log('[Mock] 保险记录数据已通过规则验证，共', mockInsuranceRecords.length, '条')
+} catch (error) {
+  console.error('[Mock] 保险记录数据规范化或验证失败:', error)
+  // 如果验证失败，使用空数组，避免返回无效数据
+  mockInsuranceRecords = []
+}
+
+// Mock 商机信息数据
+const mockOpportunities: Opportunity[] = [
+  {
+    id: 'OPP001',
+    oneId: 'ONE-202501001',
+    type: '首保流失15个月',
+    triggerRule: '首保流失提醒规则',
+    priority: '高',
+    status: '待处理',
+    pushTarget: 'bdc',
+    pushStatus: '待推送',
+    createTime: '2025-01-15 10:30:00',
+    description: '最近保养公里：0\n交付日期：2025/02/02',
+    source: 'CRM',
+  },
+  {
+    id: 'OPP002',
+    oneId: 'ONE-202501002',
+    type: 'PCN售后',
+    triggerRule: 'PCN售后活动规则',
+    priority: '高',
+    status: '处理中',
+    pushTarget: 'bdc',
+    pushStatus: '成功',
+    createTime: '2025-01-14 09:20:00',
+    description: '活动内容：对网关控制单元（蓄电池传感器）重新编程\n活动完成率：30%\n距离目标差值（车）：30\n活动属性：30',
+    source: 'CRM',
   },
 ]
 
@@ -531,6 +664,7 @@ export default [
       console.log('[Mock GET] /api/customer/profile - opportunityType:', mockCustomerProfile.opportunityType)
       console.log('[Mock GET] /api/customer/profile - segmentType:', mockCustomerProfile.segmentType)
       console.log('[Mock GET] /api/customer/profile - totalConsumption:', mockCustomerProfile.totalConsumption)
+      console.log('[Mock GET] /api/customer/profile - latestOperation:', mockCustomerProfile.latestOperation)
       return result
     },
   },
@@ -690,7 +824,7 @@ export default [
       await delay(600)
       const body = parseBody(req)
       console.log('[Mock POST] /api/customer/mobile/items - 解析后的 body:', body)
-      const { mobile, relationTagId, relationTagName, isPrimary } = body
+      const { mobile, relationTagId, relationTagName, relationTagIds, relationTagNames, businessTags, isPrimary } = body
       
       if (!mobile || !/^1[3-9]\d{9}$/.test(mobile)) {
         return {
@@ -712,8 +846,9 @@ export default [
         id: `mobile${Date.now()}`,
         mobile,
         isPrimary: isPrimary || false,
-        relationTagId,
-        relationTagName,
+        relationTagId: relationTagId || (relationTagIds && relationTagIds.length > 0 ? relationTagIds[0] : undefined),
+        relationTagName: relationTagName || (relationTagNames && relationTagNames.length > 0 ? relationTagNames[0] : undefined),
+        businessTags: businessTags || [],
         updateTime: new Date().toLocaleString('zh-CN'),
       }
       mobileData.items.push(newItem)
@@ -738,7 +873,7 @@ export default [
       await delay(600)
       const body = parseBody(req)
       console.log('[Mock PUT] /api/customer/mobile/items - 解析后的 body:', body)
-      const { id, mobile, relationTagId, relationTagName, isPrimary } = body
+      const { id, mobile, relationTagId, relationTagName, relationTagIds, relationTagNames, businessTags, isPrimary } = body
       
       if (!id) {
         return {
@@ -775,8 +910,19 @@ export default [
       }
       
       item.mobile = mobile
-      item.relationTagId = relationTagId
-      item.relationTagName = relationTagName
+      // 关系标签（单选）
+      if (relationTagId !== undefined) {
+        item.relationTagId = relationTagId
+        item.relationTagName = relationTagName
+      } else if (relationTagIds !== undefined && relationTagIds.length > 0) {
+        // 向后兼容
+        item.relationTagId = relationTagIds[0]
+        item.relationTagName = relationTagNames && relationTagNames.length > 0 ? relationTagNames[0] : undefined
+      }
+      // 业务标签（多选）
+      if (businessTags !== undefined) {
+        item.businessTags = businessTags
+      }
       if (isPrimary !== undefined) {
         item.isPrimary = isPrimary
       }
@@ -1115,24 +1261,24 @@ export default [
         {
           id: 'A001',
           type: '试驾预约',
-          date: '2024-02-15',
+          date: '2025-02-15',
           time: '14:00',
-          store: '北京朝阳4S店',
+          store: '上海闵行4S店',
           status: '已确认',
-          description: '预约试驾BMW 3系 2024款',
-          vehicleModel: 'BMW 3系 2024款',
-          source: '官网',
+          description: '预约试驾911 2025款',
+          vehicleModel: '911 2025款',
+          source: 'DMS',
         },
         {
           id: 'A002',
           type: '保养预约',
-          date: '2024-02-20',
+          date: '2025-02-20',
           time: '10:00',
-          store: '北京朝阳4S店',
+          store: '上海浦东4S店',
           status: '待确认',
           description: '定期保养服务',
-          vehicleModel: 'BMW 3系 2023款',
-          source: '官网',
+          vehicleModel: '911 2025款',
+          source: 'DMS',
         },
       ]
       const result = {
@@ -1154,24 +1300,24 @@ export default [
       const mockPlatformSources: PlatformSource[] = [
         {
           id: 'PS001',
-          name: '官网注册',
-          type: '官网平台',
-          mergeTime: '2023-10-01 10:30:00',
+          name: 'DMS',
+          type: 'DMS系统',
+          mergeTime: '2025-10-01 10:30:00',
           keyInfo: {
-            name: '张三',
+            name: '陈明',
             mobile: '13800138000',
             age: 35,
             gender: '男',
-            city: '北京',
+            city: '上海',
           },
         },
         {
           id: 'PS002',
-          name: '线下门店',
-          type: '门店系统',
-          mergeTime: '2023-09-15 14:20:00',
+          name: 'BDC',
+          type: 'BDC系统',
+          mergeTime: '2025-09-15 14:20:00',
           keyInfo: {
-            name: '张三丰',
+            name: '陈明华',
             mobile: '13900139000',
             age: 38,
             gender: '男',
@@ -1180,15 +1326,15 @@ export default [
         },
         {
           id: 'PS003',
-          name: '电话咨询',
-          type: '呼叫中心',
-          mergeTime: '2023-09-20 09:15:00',
+          name: 'CRM',
+          type: 'CRM系统',
+          mergeTime: '2025-09-20 09:15:00',
           keyInfo: {
-            name: '张三',
+            name: '陈明',
             mobile: '13800138000',
             age: 36,
             gender: '男',
-            city: '北京',
+            city: '上海',
           },
         },
       ]
@@ -1198,6 +1344,22 @@ export default [
         data: mockPlatformSources,
       }
       console.log('[Mock GET] /api/customer/platform-sources - 返回:', result)
+      return result
+    },
+  },
+  // 获取商机信息
+  {
+    url: '/api/customer/opportunities',
+    method: 'get',
+    response: async (req: any) => {
+      console.log('[Mock GET] /api/customer/opportunities - 请求:', req)
+      await delay(800)
+      const result = {
+        code: 200,
+        message: 'success',
+        data: mockOpportunities,
+      }
+      console.log('[Mock GET] /api/customer/opportunities - 返回:', result)
       return result
     },
   },
@@ -1310,6 +1472,87 @@ export default [
         data: { success: true },
       }
       console.log('[Mock PUT] /api/customer/basic-info - 返回:', result)
+      return result
+    },
+  },
+  // 获取操作日志
+  {
+    url: '/api/customer/operation-logs',
+    method: 'get',
+    response: async (req: any) => {
+      console.log('[Mock GET] /api/customer/operation-logs - 请求:', req)
+      await delay(800)
+      // 只包含人为操作的日志，显示操作人员提交的信息
+      const mockOperationLogs: OperationLog[] = [
+        {
+          id: 'LOG001',
+          operator: 'Rebecca Z.',
+          operationType: '人工更新',
+          operationTime: '2025-01-15 14:30:00',
+          description: '提交了客户基础信息更新：姓名、手机号',
+        },
+        {
+          id: 'LOG002',
+          operator: 'John D.',
+          operationType: '数据纠错',
+          operationTime: '2025-01-12 16:45:00',
+          description: '提交了字段纠错申请：年龄字段',
+        },
+        {
+          id: 'LOG003',
+          operator: 'Alice W.',
+          operationType: '人工更新',
+          operationTime: '2025-01-10 11:20:00',
+          description: '提交了客户标签信息更新',
+        },
+        {
+          id: 'LOG004',
+          operator: 'Bob M.',
+          operationType: '冲突处理',
+          operationTime: '2025-01-08 09:30:00',
+          description: '提交了姓名和手机号冲突处理申请',
+        },
+        {
+          id: 'LOG005',
+          operator: 'Rebecca Z.',
+          operationType: '人工更新',
+          operationTime: '2025-01-05 15:20:00',
+          description: '提交了客户电话号码管理更新',
+        },
+      ]
+      const result = {
+        code: 200,
+        message: 'success',
+        data: mockOperationLogs,
+      }
+      console.log('[Mock GET] /api/customer/operation-logs - 返回:', result)
+      return result
+    },
+  },
+  // 获取保险记录
+  {
+    url: '/api/customer/insurance/records',
+    method: 'get',
+    response: async (req: any) => {
+      console.log('[Mock GET] /api/customer/insurance/records - 请求:', req)
+      await delay(800)
+      
+      // 确保返回的数据符合规则
+      let records = mockInsuranceRecords
+      
+      // 再次验证数据（防止运行时数据被修改）
+      if (!validateInsuranceRecords(records)) {
+        console.error('[Mock] 保险记录数据验证失败，返回空数组')
+        records = []
+      }
+      
+      const result = {
+        code: 200,
+        message: 'success',
+        data: records,
+      }
+      console.log('[Mock GET] /api/customer/insurance/records - 返回:', result)
+      console.log('[Mock GET] /api/customer/insurance/records - 数据条数:', records.length)
       return result
     },
   },

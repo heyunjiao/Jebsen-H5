@@ -65,20 +65,22 @@
       </div>
       <div class="popup-footer">
         <van-button
-          type="default"
-          size="large"
-          @click="close"
-        >
-          取消
-        </van-button>
-        <van-button
           type="primary"
           size="large"
           :loading="submitting"
           :disabled="selectedIds.length === 0"
-          @click="handleSubmit"
+          @click="handleSubmit('merge')"
         >
-          提交
+          是同一个人（申请合并）
+        </van-button>
+        <van-button
+          type="default"
+          size="large"
+          :loading="submitting"
+          :disabled="selectedIds.length === 0"
+          @click="handleSubmit('keep')"
+        >
+          不是一个人（保持多条）
         </van-button>
       </div>
     </div>
@@ -126,7 +128,7 @@ const close = () => {
   note.value = ''
 }
 
-const handleSubmit = async () => {
+const handleSubmit = async (action: 'merge' | 'keep') => {
   if (selectedIds.value.length === 0) {
     showToast('请至少选择一项')
     return
@@ -137,6 +139,7 @@ const handleSubmit = async () => {
     await customerStore.submitNameMobileConflict({
       selectedIds: selectedIds.value,
       note: note.value || undefined,
+      action,
     })
     emit('submitted')
     close()

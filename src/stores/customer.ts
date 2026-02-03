@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { CustomerProfile, TagPool, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, ConflictResolution, Appointment, PlatformSource } from '@/api/customer'
+import type { CustomerProfile, TagPool, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, ConflictResolution, Appointment, PlatformSource, Opportunity, OperationLog, InsuranceRecord } from '@/api/customer'
 import { customerApi } from '@/api/customer'
 import { showLoadingToast, closeToast, showToast } from 'vant'
 
@@ -8,11 +8,14 @@ export const useCustomerStore = defineStore('customer', () => {
   const profile = ref<CustomerProfile | null>(null)
   const tagPool = ref<TagPool[]>([])
   const maintenanceRecords = ref<MaintenanceRecord[]>([])
+  const insuranceRecords = ref<InsuranceRecord[]>([])
   const transactions = ref<TransactionRecord[]>([])
   const vehicles = ref<VehicleRelation[]>([])
   const assets = ref<Asset[]>([])
   const appointments = ref<Appointment[]>([])
   const platformSources = ref<PlatformSource[]>([])
+  const opportunities = ref<Opportunity[]>([])
+  const operationLogs = ref<OperationLog[]>([])
   const loading = ref(false)
 
   // 获取客户画像
@@ -41,13 +44,14 @@ export const useCustomerStore = defineStore('customer', () => {
         console.log('[Store] profile.value.opportunityType:', profile.value?.opportunityType)
         console.log('[Store] profile.value.segmentType:', profile.value?.segmentType)
         console.log('[Store] profile.value.totalConsumption:', profile.value?.totalConsumption)
+        console.log('[Store] profile.value.latestOperation:', profile.value?.latestOperation)
       }
     } catch (error: any) {
       // Fallback: 使用本地数据
       console.log('使用 fallback 数据设置 profile')
       profile.value = {
         id: 'C001',
-        name: { value: '张三', isConflict: false },
+        name: { value: '陈明', isConflict: false },
         age: {
           value: 35,
           isConflict: true,
@@ -90,7 +94,7 @@ export const useCustomerStore = defineStore('customer', () => {
             { origin: '线下门店', value: '上海', time: '2023-09-15 14:20:00' },
           ],
         },
-        preferredCarModel: { value: 'BMW 3系', isConflict: false },
+        preferredCarModel: { value: '3系', isConflict: false },
         maintenanceRecords: { value: '3次保养，1次维修', isConflict: false },
         tags: ['高意向', '置换需求'],
         // 新增字段
@@ -121,6 +125,12 @@ export const useCustomerStore = defineStore('customer', () => {
           sources: [
             { origin: '财务系统', value: 1456200, time: '2023-11-15 09:00:00' },
           ],
+        },
+        // 最新操作信息（用于首页提示）
+        latestOperation: {
+          operator: 'Rebecca Z.',
+          operationType: '人工更新',
+          operationTime: '2024-01-15 14:30:00',
         },
       }
       console.log('Profile 已设置:', profile.value)
@@ -283,7 +293,7 @@ export const useCustomerStore = defineStore('customer', () => {
         {
           id: 'T001',
           orderNo: 'ORD20231001001',
-          productName: 'BMW 3系 2023款',
+          productName: '3系 2023款',
           amount: 320000,
           status: '已完成',
           transactionTime: '2023-10-01 14:30:00',
@@ -315,7 +325,7 @@ export const useCustomerStore = defineStore('customer', () => {
       vehicles.value = [
         {
           id: 'V001',
-          vehicleModel: 'BMW 3系 2023款',
+          vehicleModel: '3系 2023款',
           licensePlate: '京A12345',
           vin: 'LBVNU210X3K123456',
           purchaseDate: '2023-10-01',
@@ -324,7 +334,7 @@ export const useCustomerStore = defineStore('customer', () => {
         },
         {
           id: 'V002',
-          vehicleModel: 'BMW X5 2023款',
+          vehicleModel: 'X5 2023款',
           licensePlate: '京B67890',
           vin: '5UXKR0C50L9A12345',
           purchaseDate: '2022-05-15',
@@ -421,8 +431,8 @@ export const useCustomerStore = defineStore('customer', () => {
           time: '14:00',
           store: '北京朝阳4S店',
           status: '已确认',
-          description: '预约试驾BMW 3系 2024款',
-          vehicleModel: 'BMW 3系 2024款',
+          description: '预约试驾3系 2024款',
+          vehicleModel: '3系 2024款',
           source: '官网',
         },
         {
@@ -433,7 +443,7 @@ export const useCustomerStore = defineStore('customer', () => {
           store: '北京朝阳4S店',
           status: '待确认',
           description: '定期保养服务',
-          vehicleModel: 'BMW 3系 2023款',
+          vehicleModel: '3系 2023款',
           source: '官网',
         },
       ]
@@ -453,24 +463,141 @@ export const useCustomerStore = defineStore('customer', () => {
     }
   }
 
+  // 获取商机信息
+  const fetchOpportunities = async (customerId?: string) => {
+    try {
+      const res = await customerApi.getOpportunities(customerId)
+      if (res.code === 200) {
+        opportunities.value = [...res.data]
+      }
+    } catch (error: any) {
+      console.error('获取商机信息失败:', error)
+      // Fallback: 使用本地数据
+      opportunities.value = [
+        {
+          id: 'OPP001',
+          oneId: 'ONE-202401001',
+          type: '首保流失15个月',
+          triggerRule: '首保流失提醒规则',
+          priority: '高',
+          status: '待处理',
+          pushTarget: 'bdc',
+          pushStatus: '待推送',
+          createTime: '2024-01-15 10:30:00',
+          description: '最近保养公里：0\n交付日期：2026/02/02',
+          source: 'CRM系统',
+        },
+        {
+          id: 'OPP002',
+          oneId: 'ONE-202401002',
+          type: 'PCN售后',
+          triggerRule: 'PCN售后活动规则',
+          priority: '高',
+          status: '处理中',
+          pushTarget: 'bdc',
+          pushStatus: '成功',
+          createTime: '2024-01-14 09:20:00',
+          description: '活动内容：对网关控制单元（蓄电池传感器）重新编程\n活动完成率：30%\n距离目标差值（车）：30\n活动属性：30',
+          source: 'CRM系统',
+        },
+      ]
+    }
+  }
+
+  // 获取操作日志
+  const fetchOperationLogs = async (customerId?: string) => {
+    try {
+      const res = await customerApi.getOperationLogs(customerId)
+      if (res.code === 200) {
+        operationLogs.value = [...res.data]
+      }
+    } catch (error: any) {
+      console.error('获取操作日志失败:', error)
+      // Fallback: 使用空数组
+      operationLogs.value = []
+    }
+  }
+
+  // 获取保险记录（分页加载）
+  const fetchInsuranceRecordsPage = async (page: number = 1, pageSize: number = 5, customerId?: string): Promise<boolean> => {
+    try {
+      const res = await customerApi.getInsuranceRecords({
+        customerId,
+        page,
+        pageSize,
+      })
+      if (res.code === 200) {
+        // 追加新数据到现有列表
+        if (page === 1) {
+          // 第一页，重置数据
+          insuranceRecords.value = [...res.data.list]
+        } else {
+          // 后续页，追加数据
+          insuranceRecords.value = [...insuranceRecords.value, ...res.data.list]
+        }
+        return res.data.hasMore
+      }
+      return false
+    } catch (error: any) {
+      console.error('获取保险记录失败:', error)
+      return false
+    }
+  }
+
+  // 获取保险记录（兼容旧接口，一次性加载所有）
+  const fetchInsuranceRecords = async (customerId?: string) => {
+    try {
+      const res = await customerApi.getInsuranceRecords({
+        customerId,
+        page: 1,
+        pageSize: 100, // 一次性加载大量数据
+      })
+      if (res.code === 200) {
+        // 新格式：{ list, hasMore, total }
+        if (res.data && 'list' in res.data) {
+          insuranceRecords.value = [...res.data.list]
+        } else {
+          // 兼容旧格式：直接是数组
+          insuranceRecords.value = Array.isArray(res.data) ? [...res.data] : []
+        }
+      }
+    } catch (error: any) {
+      console.error('获取保险记录失败:', error)
+      insuranceRecords.value = []
+    }
+  }
+
+  // 清空保险记录
+  const clearInsuranceRecords = () => {
+    insuranceRecords.value = []
+  }
+
   return {
     profile,
     tagPool,
     maintenanceRecords,
+    insuranceRecords,
     transactions,
     vehicles,
     assets,
     appointments,
     platformSources,
+    opportunities,
+    operationLogs,
     loading,
     fetchProfile,
     fetchTagPool,
     fetchMaintenanceRecords,
+    fetchInsuranceRecords,
+    fetchInsuranceRecordsPage,
+    clearInsuranceRecords,
     fetchTransactions,
     fetchVehicles,
     fetchAssets,
     fetchAppointments,
     fetchPlatformSources,
+    fetchOpportunities,
+    fetchOperationLogs,
     addTag,
     removeTag,
     updatePreferredCarModelTags,

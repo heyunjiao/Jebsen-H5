@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
-import type { CustomerProfile, TagPool, SourceDetail, MobileItem, MobileData, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, ConflictResolution, Appointment, PlatformSource } from '@/types/customer'
+import type { CustomerProfile, TagPool, SourceDetail, MobileItem, MobileData, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, ConflictResolution, Appointment, PlatformSource, Opportunity, OperationLog, InsuranceRecord } from '@/types/customer'
 import { mockRequestInterceptor } from '@/mock'
 
 // API 响应基础类型
@@ -10,7 +10,7 @@ export interface ApiResponse<T> {
 }
 
 // 导出类型供外部使用
-export type { CustomerProfile, TagPool, SourceDetail, MobileItem, MobileData, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, ConflictResolution, Appointment, PlatformSource }
+export type { CustomerProfile, TagPool, SourceDetail, MobileItem, MobileData, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, ConflictResolution, Appointment, PlatformSource, Opportunity, OperationLog, InsuranceRecord }
 
 // 创建 axios 实例
 const request = axios.create({
@@ -184,6 +184,9 @@ export const customerApi = {
     mobile: string
     relationTagId?: string
     relationTagName?: string
+    relationTagIds?: string[]
+    relationTagNames?: string[]
+    businessTags?: string[]
     isPrimary?: boolean
   }): Promise<ApiResponse<MobileItem>> => {
     return request.post('/customer/mobile/items', data)
@@ -195,6 +198,9 @@ export const customerApi = {
     mobile: string
     relationTagId?: string
     relationTagName?: string
+    relationTagIds?: string[]
+    relationTagNames?: string[]
+    businessTags?: string[]
     isPrimary?: boolean
   }): Promise<ApiResponse<MobileItem>> => {
     return request.put('/customer/mobile/items', data)
@@ -239,6 +245,11 @@ export const customerApi = {
     return request.get('/customer/vehicles', {
       params: { customerId },
     })
+  },
+
+  // 更新车辆状态
+  updateVehicleStatus: (vehicleId: string, status: string): Promise<ApiResponse<VehicleRelation>> => {
+    return request.put(`/customer/vehicles/${vehicleId}/status`, { status })
   },
 
   // 获取资产中心
@@ -305,6 +316,31 @@ export const customerApi = {
     reason: string // 更改理由（必填）
   }): Promise<ApiResponse<{ success: boolean }>> => {
     return request.put('/customer/basic-info', data)
+  },
+
+  // 获取商机信息
+  getOpportunities: (customerId?: string): Promise<ApiResponse<Opportunity[]>> => {
+    return request.get('/customer/opportunities', {
+      params: { customerId },
+    })
+  },
+
+  // 获取操作日志
+  getOperationLogs: (customerId?: string): Promise<ApiResponse<OperationLog[]>> => {
+    return request.get('/customer/operation-logs', {
+      params: { customerId },
+    })
+  },
+
+  // 获取保险记录（支持分页）
+  getInsuranceRecords: (params?: {
+    customerId?: string
+    page?: number
+    pageSize?: number
+  }): Promise<ApiResponse<{ list: InsuranceRecord[]; hasMore: boolean; total: number }>> => {
+    return request.get('/customer/insurance/records', {
+      params,
+    })
   },
 }
 

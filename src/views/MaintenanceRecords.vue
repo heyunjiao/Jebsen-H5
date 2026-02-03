@@ -1,57 +1,69 @@
 <template>
-  <div class="insurance-container">
-    <!-- 保险记录列表（使用 van-list 实现滚动加载） -->
+  <div class="maintenance-container">
+    <!-- 维保记录列表（使用 van-list 实现滚动加载） -->
     <van-list
       v-model:loading="loading"
       :finished="finished"
       finished-text="没有更多了"
       @load="onLoad"
     >
-      <!-- 保险记录卡片 -->
+      <!-- 维保记录卡片 -->
       <div
-        v-for="record in insuranceRecords"
+        v-for="record in maintenanceRecords"
         :key="record.id"
-        class="insurance-card"
+        class="maintenance-card"
       >
         <div class="card-header">
-          <div class="record-title">{{ record.type }}</div>
+          <div class="record-title">{{ record.serviceType }}</div>
           <van-tag :type="getStatusType(record.status)" :size="'small' as any">
             {{ record.status }}
           </van-tag>
         </div>
         <div class="card-content">
           <div class="info-row">
-            <span class="label">保险类型：</span>
-            <span class="value">{{ record.type }}</span>
-          </div>
-          <div v-if="record.company" class="info-row">
-            <span class="label">保险公司：</span>
-            <span class="value">{{ record.company }}</span>
-          </div>
-          <div v-if="record.policyNo" class="info-row">
-            <span class="label">保单号：</span>
-            <span class="value">{{ record.policyNo }}</span>
-          </div>
-          <div v-if="record.startDate || record.endDate" class="info-row">
-            <span class="label">保险期限：</span>
-            <span class="value">
-              {{ record.startDate || '未知' }} 至 {{ record.endDate || '未知' }}
-            </span>
-          </div>
-          <div v-if="record.purchaseDate" class="info-row">
-            <span class="label">购买日期：</span>
-            <span class="value">{{ record.purchaseDate }}</span>
+            <span class="label">服务类型：</span>
+            <span class="value">{{ record.serviceType }}</span>
           </div>
           <div class="info-row">
-            <span class="label">保险金额：</span>
+            <span class="label">服务时间：</span>
+            <span class="value">{{ record.serviceTime }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">服务门店：</span>
+            <span class="value">{{ record.serviceStore }}</span>
+          </div>
+          <div v-if="record.vehicleModel" class="info-row">
+            <span class="label">车辆型号：</span>
+            <span class="value">{{ record.vehicleModel }}</span>
+          </div>
+          <div v-if="record.amount" class="info-row">
+            <span class="label">服务金额：</span>
             <span class="value amount">¥{{ formatAmount(record.amount) }}</span>
+          </div>
+          <div v-if="record.description" class="info-row">
+            <span class="label">服务描述：</span>
+            <span class="value">{{ record.description }}</span>
+          </div>
+          <div v-if="record.tags && record.tags.length > 0" class="info-row">
+            <span class="label">标签：</span>
+            <div class="tags">
+              <van-tag
+                v-for="(tag, index) in record.tags"
+                :key="index"
+                type="primary"
+                :size="'small' as any"
+                style="margin-right: 4px;"
+              >
+                {{ tag }}
+              </van-tag>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- 空状态 -->
-      <div v-if="!loading && insuranceRecords.length === 0" class="empty-state">
-        <van-empty description="暂无保险记录" />
+      <div v-if="!loading && maintenanceRecords.length === 0" class="empty-state">
+        <van-empty description="暂无维保记录" />
       </div>
     </van-list>
   </div>
@@ -67,26 +79,25 @@ const finished = ref(false)
 const page = ref(1)
 const pageSize = ref(5) // 每页加载 5 条
 
-// 保险记录列表
-const insuranceRecords = computed(() => {
-  return customerStore.insuranceRecords || []
+// 维保记录列表
+const maintenanceRecords = computed(() => {
+  return customerStore.maintenanceRecords || []
 })
 
 // 获取状态类型
 const getStatusType = (status: string): any => {
   const typeMap: Record<string, any> = {
-    '已生效': 'success',
-    '已过期': 'warning',
-    '待续保': 'primary',
-    '已退保': 'default',
-    '生效中': 'success',
+    '已完成': 'success',
+    '进行中': 'primary',
+    '待处理': 'warning',
+    '已取消': 'default',
   }
   return typeMap[status] || 'default'
 }
 
-// 格式化金额（取整）
+// 格式化金额
 const formatAmount = (amount: number) => {
-  return Math.round(amount).toLocaleString('zh-CN')
+  return amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 // 滚动加载数据
@@ -96,16 +107,14 @@ const onLoad = async () => {
       await customerStore.fetchProfile()
     }
     
-    // 加载分页数据
-    const hasMore = await customerStore.fetchInsuranceRecordsPage(page.value, pageSize.value)
-    
-    if (hasMore) {
-      page.value++
-    } else {
-      finished.value = true
+    // 加载维保记录（目前一次性加载，后续可以改为分页）
+    if (maintenanceRecords.value.length === 0) {
+      await customerStore.fetchMaintenanceRecords()
     }
+    
+    finished.value = true
   } catch (error) {
-    console.error('加载保险记录失败:', error)
+    console.error('加载维保记录失败:', error)
     finished.value = true
   } finally {
     loading.value = false
@@ -117,16 +126,14 @@ onMounted(async () => {
   // 重置分页状态
   page.value = 1
   finished.value = false
-  // 清空已有数据，重新开始加载
-  customerStore.clearInsuranceRecords()
 })
 </script>
 
 <style scoped lang="scss">
-.insurance-container {
+.maintenance-container {
   min-height: 100vh;
   background: #f7f8fa;
-  padding: 12px;
+  padding: 12px 0;
   max-width: 100%;
   box-sizing: border-box;
   padding-bottom: 20px; // 确保底部有足够空间
@@ -149,36 +156,7 @@ onMounted(async () => {
   }
 }
 
-.header {
-  margin-bottom: 16px;
-  padding: 16px;
-  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-  border-radius: 12px;
-  color: white;
-
-  .title {
-    margin: 0 0 8px 0;
-    font-size: 20px;
-    font-weight: 600;
-  }
-
-  .customer-id {
-    font-size: 14px;
-    opacity: 0.9;
-  }
-}
-
-.loading {
-  padding: 40px 0;
-}
-
-.content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.insurance-card {
+.maintenance-card {
   background: white;
   border-radius: 8px;
   overflow: hidden;
@@ -228,6 +206,13 @@ onMounted(async () => {
           font-size: 16px;
         }
       }
+      
+      .tags {
+        flex: 1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
     }
   }
 }
@@ -237,12 +222,6 @@ onMounted(async () => {
 }
 
 // 响应式适配
-@media (max-width: 400px) {
-  .insurance-container {
-    padding: 8px;
-  }
-}
+
 </style>
-
-
 

@@ -7,105 +7,292 @@
     >
       <van-notice-bar
         left-icon="info-o"
-        color="#ff976a"
-        background="#fff4e8"
+        color="#d46b08"
+        background="#fff7e6"
         scrollable
         :speed="50"
         @click="showConflictResolver = true"
         style="cursor: pointer;"
       >
-        系统检测到【姓名+手机号高度相似】不一致。请确认最终保留值。
+      该顾客疑似存在多条记录，请立即点击更新！
       </van-notice-bar>
     </div>
 
-    <!-- 多源平台提示（最顶部优先显示） -->
+    <!-- 最新操作这个客户的信息提示，点击弹窗显示操作日志 -->
     <div
-      v-if="customerStore.profile?.isMultiSource && customerStore.platformSources.length > 0"
-      class="multi-source-alert"
+      v-if="latestOperationText || customerStore.profile?.latestOperation"
+      class="operation-alert"
     >
       <van-notice-bar
         left-icon="info-o"
-        color="#1989fa"
-        background="#e8f4ff"
+        :color="'var(--van-tag-primary-color)'"
+        background="#e6f7ff"
         scrollable
         :speed="50"
+        @click="showOperationLogDialog = true"
+        style="cursor: pointer;"
       >
-        <span>该客户数据来自多个平台合并。</span>
-        <span
+        <span>{{ latestOperationText || '该顾客已被 Rebecca Z. 人工更新 （2024年01月15日）' }}</span>
+      </van-notice-bar>
+    </div>
+
+
+
+    <!-- <span
           class="source-link"
           @click="showPlatformFlow = true"
         >
           查看溯源信息
-        </span>
-      </van-notice-bar>
-    </div>
-
-    <!-- 头部 -->
-    <div class="header">
-      <h1 class="title">{{ customerStore.profile?.name?.value || 'XX' }} 客户</h1>
-      <div v-if="customerStore.profile" class="customer-id">
-        客户ID: {{ customerStore.profile.id }}
-      </div>
-      <!-- 商机类型、总消费、标签、分群类型 -->
-      <div v-if="customerStore.profile && !customerStore.loading" class="header-info">
-        <!-- 商机类型（支持多条） -->
-        <div v-if="opportunityList.length > 0" class="header-info-item">
-          <van-icon name="star-o" class="header-info-icon opportunity-icon" />
-          <span class="header-info-label">商机：</span>
-          <div class="header-info-values">
-            <span
-              v-for="(opportunity, index) in opportunityList"
-              :key="index"
-              class="header-info-value"
-            >
-              {{ opportunity }}
-              <span v-if="index < opportunityList.length - 1" class="separator">、</span>
-            </span>
+        </span> -->
+    <!-- 首屏内容 -->
+    <div v-if="!customerStore.loading && customerStore.profile" class="first-screen">
+      <!-- 1. 姓名、电话和商机信息合并 -->
+      <div class="info-card name-card">
+        <div class="name-section">
+          <div class="name-row">
+            <div class="name-with-icon">
+              <span class="name-text">{{ customerStore.profile.name?.value || 'XX' }}</span>
+              <van-icon 
+                name="info-o" 
+                class="source-icon"
+                @click="showPlatformFlow = true"
+              />
+            </div>
+            <div class="identity-badge">
+              <van-icon 
+                :name="customerTypeIcon" 
+                class="identity-icon"
+                :class="{ 'is-company': isCompany }"
+              />
+              <span class="identity-text">{{ customerTypeText }}</span>
+            </div>
+          </div>
+          <div class="customer-id">
+            <span class="id-label">客户ID</span>
+            <span class="id-value">{{ customerStore.profile.id }}</span>
           </div>
         </div>
-        <!-- 总消费 -->
-        <div v-if="customerStore.profile.totalConsumption" class="header-info-item">
-          <van-icon name="gold-coin-o" class="header-info-icon consumption-icon" />
-          <span class="header-info-label">总消费：</span>
-          <span class="header-info-value consumption-value">
-            ¥{{ formatAmount(customerStore.profile.totalConsumption.value as number) }}
-          </span>
+        
+        <div class="card-content-wrapper">
+          <!-- 电话部分 -->
+          <div class="phone-section">
+            <div class="section-title">电话</div>
+            <div class="phone-list">
+              <div
+                v-for="(item, index) in displayedPhones"
+                :key="item.id"
+                class="phone-item"
+                :class="{ 'is-primary': item.isPrimary }"
+              >
+                <span class="phone-number">{{ item.mobile }}</span>
+                <van-tag v-if="item.isPrimary" type="primary" :size="'small' as any">主号</van-tag>
+                <!-- 业务标签显示（车主、送修人） -->
+                <template v-if="item.businessTags && item.businessTags.length > 0">
+                  <van-tag
+                    v-for="(businessTag, tagIndex) in item.businessTags"
+                    :key="tagIndex"
+                    type="primary"
+                    plain
+                    :size="'small' as any"
+                  >
+                    {{ businessTag }}
+                  </van-tag>
+                </template>
+                <!-- 关系标签显示（向后兼容） -->
+                <template v-if="item.relationTagNames && item.relationTagNames.length > 0">
+                  <van-tag
+                    v-for="(tagName, tagIndex) in item.relationTagNames"
+                    :key="tagIndex"
+                    type="default"
+                    :size="'small' as any"
+                  >
+                    {{ tagName }}
+                  </van-tag>
+                </template>
+                <van-tag v-else-if="item.relationTagName" type="default" :size="'small' as any">{{ item.relationTagName }}</van-tag>
+              </div>
+              <van-button
+                v-if="hasMorePhones"
+                type="primary"
+                size="mini"
+                plain
+                @click="showMobileManager = true"
+                class="more-phone-btn"
+              >
+                更多
+              </van-button>
+            </div>
+          </div>
+          <!-- 商机信息部分 -->
+          <div class="opportunity-section" v-if="opportunityTypeList.length > 0">
+            <div class="section-title">商机信息</div>
+            <div class="opportunity-types" @click="showOpportunityDialog = true">
+              <van-tag
+                v-for="(type, index) in opportunityTypeList"
+                :key="index"
+                :type="getOpportunityTypeTagType(type)"
+                size="medium"
+              
+              >
+                {{ type }}
+              </van-tag>
+            </div>
+          </div>
         </div>
-        <!-- 标签（支持多条） -->
-        <div v-if="customerStore.profile.tags && customerStore.profile.tags.length > 0" class="header-info-item">
-          <van-icon name="bookmark-o" class="header-info-icon tag-icon" />
-          <span class="header-info-label">标签：</span>
-          <div class="header-info-values">
-            <span
+      </div>
+
+      <!-- 3. 车辆信息（显示2辆，确保在第一屏显示） -->
+      <div class="info-card vehicle-card">
+        <div class="card-header">
+          <div class="card-title">车辆信息</div>
+          <van-button
+            v-if="customerStore.vehicles.length > 2"
+            type="primary"
+            size="mini"
+            plain
+            @click="showVehicleDialog = true"
+          >
+            查看全部
+          </van-button>
+        </div>
+        <div class="vehicle-list">
+          <div
+            v-for="vehicle in displayedVehicles"
+            :key="vehicle.id"
+            class="vehicle-item"
+          >
+            <div class="vehicle-header">
+              <div class="vehicle-model">{{ vehicle.vehicleModel }}</div>
+              <div class="vehicle-status-wrapper" @click="openVehicleStatusSheet(vehicle.id)">
+                <van-tag
+                  :type="getVehicleStatusType(vehicle.status)"
+                  :size="'small' as any"
+                  class="status-tag-clickable"
+                >
+                  {{ vehicle.status }}
+                </van-tag>
+                <van-icon name="arrow-down" class="status-arrow-icon" />
+              </div>
+              <van-action-sheet
+                v-model:show="vehicleStatusSheets[vehicle.id]"
+                :actions="vehicleStatusOptions"
+                @select="(action: any) => handleVehicleStatusChange(vehicle.id, action.value)"
+                cancel-text="取消"
+              />
+            </div>
+            <div class="vehicle-info">
+              <div class="info-item">
+                <span class="label">车架号：</span>
+                <span class="value">{{ vehicle.vin || '未知' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">车牌号：</span>
+                <span class="value">{{ vehicle.licensePlate || '未知' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. 最近到期优惠券 -->
+      <div 
+        v-if="nearestExpiringAsset" 
+        class="info-card coupon-card"
+        @click="handleCouponCardClick"
+      >
+        <div class="coupon-header">
+          <div class="coupon-title">{{ nearestExpiringAsset.name }}</div>
+          <van-icon name="arrow" class="arrow-icon" />
+        </div>
+        <div class="coupon-info">
+          <div class="coupon-row">
+            <span class="label">到期日期：</span>
+            <span class="value">{{ nearestExpiringAsset.validTo }}</span>
+          </div>
+          <div class="coupon-row">
+            <span class="label">金额：</span>
+            <span class="value amount">¥{{ formatAmount(nearestExpiringAsset.amount || 0) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. 标签信息 -->
+      <div class="info-card tags-card">
+        <div class="card-header">
+          <div class="card-title">客户标签</div>
+        </div>
+        <div class="tags-content">
+          <div v-if="customerStore.profile.tags.length > 0" class="tags-list">
+            <van-tag
               v-for="(tag, index) in customerStore.profile.tags"
               :key="index"
-              class="header-info-value"
+              :type="getTagType(tag)"
+              size="medium"
+              class="tag-item clickable-tag"
+              @click="showTagManager = true"
             >
               {{ tag }}
-              <span v-if="index < customerStore.profile.tags.length - 1" class="separator">、</span>
-            </span>
+            </van-tag>
           </div>
+          <div v-else class="empty-tags">暂无标签</div>
         </div>
-        <!-- 分群类型（支持多条） -->
-        <div v-if="segmentList.length > 0" class="header-info-item">
-          <van-icon name="friends-o" class="header-info-icon segment-icon" />
-          <span class="header-info-label">分群：</span>
-          <div class="header-info-values">
-            <span
-              v-for="(segment, index) in segmentList"
-              :key="index"
-              class="header-info-value"
-            >
-              {{ segment }}
-              <span v-if="index < segmentList.length - 1" class="separator">、</span>
-            </span>
-          </div>
+      </div>
+
+      <!-- 6. 基本信息块（移到车辆信息之后） -->
+      <div class="info-card basic-info-card">
+        <div class="card-header">
+          <div class="card-title">基本信息</div>
+          <van-button
+            type="primary"
+            size="mini"
+            plain
+            icon="edit"
+            @click="handleOpenBasicInfoEditor"
+          >
+            编辑
+          </van-button>
+        </div>
+        <div class="card-content">
+          <van-cell title="姓名" :value="String(customerStore.profile.name.value)" />
+          <van-cell title="年龄" :value="String(customerStore.profile.age.value)" />
+          <van-cell
+            v-if="!('items' in customerStore.profile.mobile)"
+            title="手机号"
+            :value="String(customerStore.profile.mobile.value)"
+          />
+          <van-cell title="性别" :value="String(customerStore.profile.gender.value)" />
+          <van-cell title="城市" :value="String(customerStore.profile.city.value)" />
+          <van-cell
+            v-if="customerStore.profile?.customerType"
+            title="客户类型"
+            :value="String(customerStore.profile.customerType.value)"
+          />
         </div>
       </div>
     </div>
 
+    <!-- 加载状态 -->
+    <van-loading
+      v-if="customerStore.loading"
+      type="spinner"
+      vertical
+      class="loading"
+    >
+      加载中...
+    </van-loading>
+
+    <!-- Tab 切换（维保、保险） -->
+    <van-tabs v-model:active="activeTab" class="main-tabs">
+      <van-tab title="维保" name="maintenance">
+        <MaintenanceRecords />
+      </van-tab>
+      <van-tab title="保险" name="insurance">
+        <Maintenance />
+      </van-tab>
+    </van-tabs>
+
     <!-- 预约信息卡片（提前显示，业务人员重点关注） -->
-    <div v-if="customerStore.appointments && customerStore.appointments.length > 0 && !customerStore.loading" class="appointment-card-top">
+    <!-- <div v-if="customerStore.appointments && customerStore.appointments.length > 0 && !customerStore.loading" class="appointment-card-top">
       <div class="card-header">
         <div class="card-title">预约信息</div>
       </div>
@@ -144,304 +331,10 @@
           </div>
         </div>
       </div>
-    </div>
+    </div> -->
 
 
 
-    <!-- Tab 切换 -->
-    <van-tabs v-model:active="activeTab" class="main-tabs">
-      <van-tab title="客户画像" name="profile">
-        <!-- 加载状态 -->
-        <van-loading
-          v-if="customerStore.loading"
-          type="spinner"
-          vertical
-          class="loading"
-        >
-          加载中...
-        </van-loading>
-
-        <!-- 内容区域 -->
-        <div v-else-if="customerStore.profile" class="content">
-      <!-- 电话号码管理卡片（重要，提前显示） -->
-      <div v-if="customerStore.profile?.mobile && 'items' in customerStore.profile.mobile" class="info-card mobile-manager-card">
-        <div class="card-header">
-          <div class="card-title">电话号码管理</div>
-          <van-button
-            type="primary"
-            size="mini"
-            plain
-            icon="setting"
-            @click="showMobileManager = true"
-          >
-            管理
-          </van-button>
-        </div>
-        <div class="card-content">
-          <div class="mobile-preview">
-            <div
-              v-for="item in (customerStore.profile.mobile as MobileData).items"
-              :key="item.id"
-              class="mobile-preview-item"
-              :class="{ 'is-primary': item.isPrimary }"
-            >
-              <div class="mobile-info">
-                <span class="mobile-number">{{ item.mobile }}</span>
-                <van-tag v-if="item.isPrimary" type="primary" :size="'small' as any">主号</van-tag>
-                <van-tag v-if="item.relationTagName" type="default" :size="'small' as any">{{ item.relationTagName }}</van-tag>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 基础信息卡片 -->
-      <div class="info-card">
-        <div class="card-header">
-          <div class="card-title">基础信息</div>
-          <van-button
-            type="primary"
-            size="mini"
-            plain
-            icon="edit"
-            @click="handleOpenBasicInfoEditor"
-          >
-            编辑
-          </van-button>
-        </div>
-        <div class="card-content">
-          <van-cell title="姓名" :value="String(customerStore.profile.name.value)" />
-          <van-cell title="年龄" :value="String(customerStore.profile.age.value)" />
-          <van-cell
-            v-if="!('items' in customerStore.profile.mobile)"
-            title="手机号"
-            :value="String(customerStore.profile.mobile.value)"
-          />
-          <van-cell title="性别" :value="String(customerStore.profile.gender.value)" />
-          <van-cell title="城市" :value="String(customerStore.profile.city.value)" />
-          <van-cell
-            v-if="customerStore.profile?.customerType"
-            title="客户类型"
-            :value="String(customerStore.profile.customerType.value)"
-          />
-        </div>
-      </div>
-
-      <!-- 业务信息卡片 -->
-      <div class="info-card">
-        <div class="card-header">
-          <div class="card-title">业务信息</div>
-        </div>
-        <div class="card-content">
-          <!-- 意向车型（支持标签） -->
-          <div class="preferred-car-field">
-            <van-cell title="意向车型" :value="customerStore.profile.preferredCarModel.value" />
-            <div class="preferred-car-tags">
-              <div class="tags-header">
-                <span class="tags-label">标签：</span>
-                <van-button
-                  type="primary"
-                  size="mini"
-                  plain
-                  icon="plus"
-                  @click="openPreferredCarTagSelector"
-                >
-                  添加标签
-                </van-button>
-              </div>
-              <div v-if="preferredCarTags.length > 0" class="selected-tags">
-                <van-tag
-                  v-for="(tag, index) in preferredCarTags"
-                  :key="index"
-                  :type="getTagType(tag)"
-                  :size="'small' as any"
-                  closeable
-                  @close="handleRemovePreferredCarTag(tag)"
-                  class="tag-item"
-                >
-                  {{ tag }}
-                </van-tag>
-              </div>
-              <div v-else class="empty-tags">暂无标签</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 标签卡片 -->
-      <div class="info-card">
-        <div class="card-header">
-          <div class="card-title">客户标签</div>
-        </div>
-        <div class="card-content">
-          <div class="tags-section">
-            <!-- 已选标签 -->
-            <div v-if="customerStore.profile.tags.length > 0" class="selected-tags">
-              <van-tag
-                v-for="(tag, index) in customerStore.profile.tags"
-                :key="index"
-                :type="getTagType(tag)"
-                size="medium"
-                closeable
-                @close="handleRemoveTag(tag)"
-                class="tag-item"
-              >
-                {{ tag }}
-              </van-tag>
-            </div>
-            <div v-else class="empty-tags">暂无标签</div>
-
-            <!-- 添加标签按钮 -->
-            <van-button
-              type="primary"
-              size="small"
-              plain
-              icon="plus"
-              @click="showTagSelector = true"
-              class="add-tag-btn"
-            >
-              添加标签
-            </van-button>
-          </div>
-        </div>
-      </div>
-        </div>
-      </van-tab>
-
-      <!-- 交易记录 Tab -->
-      <van-tab title="交易" name="transactions">
-        <div class="tab-content">
-          <div
-            v-for="transaction in customerStore.transactions"
-            :key="transaction.id"
-            class="maintenance-card"
-          >
-            <div class="card-header">
-              <div class="record-title">{{ transaction.productName }}</div>
-              <van-tag
-                :type="getTransactionStatusType(transaction.status)"
-                :size="'small' as any"
-              >
-                {{ transaction.status }}
-              </van-tag>
-            </div>
-            <div class="card-content">
-              <div class="info-row">
-                <span class="label">订单号：</span>
-                <span class="value">{{ transaction.orderNo }}</span>
-              </div>
-              <div class="info-row">
-                <span class="label">交易金额：</span>
-                <span class="value amount">¥{{ formatAmount(transaction.amount) }}</span>
-              </div>
-              <div class="info-row">
-                <span class="label">交易时间：</span>
-                <span class="value">{{ transaction.transactionTime }}</span>
-              </div>
-              <div v-if="transaction.source" class="info-row">
-                <span class="label">来源：</span>
-                <span class="value">{{ transaction.source }}</span>
-              </div>
-            </div>
-          </div>
-          <div v-if="!customerStore.transactions || customerStore.transactions.length === 0" class="empty-state">
-            <van-empty description="暂无交易记录" />
-          </div>
-        </div>
-      </van-tab>
-
-      <!-- 车辆关联 Tab -->
-      <van-tab title="车辆" name="vehicles">
-        <div class="tab-content">
-          <div
-            v-for="vehicle in customerStore.vehicles"
-            :key="vehicle.id"
-            class="maintenance-card"
-          >
-            <div class="card-header">
-              <div class="record-title">{{ vehicle.vehicleModel }}</div>
-              <van-tag
-                :type="getVehicleStatusType(vehicle.status)"
-                :size="'small' as any"
-              >
-                {{ vehicle.status }}
-              </van-tag>
-            </div>
-            <div class="card-content">
-              <div v-if="vehicle.licensePlate" class="info-row">
-                <span class="label">车牌号：</span>
-                <span class="value">{{ vehicle.licensePlate }}</span>
-              </div>
-              <div v-if="vehicle.vin" class="info-row">
-                <span class="label">车架号：</span>
-                <span class="value">{{ vehicle.vin }}</span>
-              </div>
-              <div v-if="vehicle.purchaseDate" class="info-row">
-                <span class="label">购买日期：</span>
-                <span class="value">{{ vehicle.purchaseDate }}</span>
-              </div>
-              <div v-if="vehicle.source" class="info-row">
-                <span class="label">来源：</span>
-                <span class="value">{{ vehicle.source }}</span>
-              </div>
-            </div>
-          </div>
-          <div v-if="!customerStore.vehicles || customerStore.vehicles.length === 0" class="empty-state">
-            <van-empty description="暂无车辆关联" />
-          </div>
-        </div>
-      </van-tab>
-
-      <!-- 资产中心 Tab -->
-      <van-tab title="资产" name="assets">
-        <div class="tab-content">
-          <div
-            v-for="asset in customerStore.assets"
-            :key="asset.id"
-            class="maintenance-card"
-          >
-            <div class="card-header">
-              <div class="record-title">{{ asset.name }}</div>
-              <van-tag
-                :type="getAssetStatusType(asset.status)"
-                :size="'small' as any"
-              >
-                {{ asset.status }}
-              </van-tag>
-            </div>
-            <div class="card-content">
-              <div class="info-row">
-                <span class="label">类型：</span>
-                <span class="value">{{ asset.type === 'coupon' ? '优惠券' : '代金券' }}</span>
-              </div>
-              <div v-if="asset.amount" class="info-row">
-                <span class="label">面额：</span>
-                <span class="value amount">¥{{ formatAmount(asset.amount) }}</span>
-              </div>
-              <div v-if="asset.discount" class="info-row">
-                <span class="label">折扣：</span>
-                <span class="value">{{ (asset.discount * 10).toFixed(1) }}折</span>
-              </div>
-              <div class="info-row">
-                <span class="label">有效期：</span>
-                <span class="value">{{ asset.validFrom }} 至 {{ asset.validTo }}</span>
-              </div>
-              <div v-if="asset.source" class="info-row">
-                <span class="label">来源：</span>
-                <span class="value">{{ asset.source }}</span>
-              </div>
-            </div>
-          </div>
-          <div v-if="!customerStore.assets || customerStore.assets.length === 0" class="empty-state">
-            <van-empty description="暂无优惠券记录" />
-          </div>
-        </div>
-      </van-tab>
-
-      <van-tab title="维保记录" name="maintenance">
-        <Maintenance />
-      </van-tab>
-    </van-tabs>
 
     <!-- 客户标签选择器弹窗 -->
     <van-popup
@@ -556,6 +449,271 @@
       @update="handleMobileUpdate"
     />
 
+    <!-- 操作日志弹窗 -->
+    <OperationLogDialog
+      v-model:show="showOperationLogDialog"
+      :logs="customerStore.operationLogs"
+      :loading="operationLogsLoading"
+    />
+
+    <!-- 商机信息弹窗 -->
+    <van-popup
+      v-model:show="showOpportunityDialog"
+      position="bottom"
+      :style="{ height: '70%' }"
+      round
+      lock-scroll
+    >
+      <div class="opportunity-dialog">
+        <div class="popup-header">
+          <h3>商机信息</h3>
+          <van-icon name="cross" @click="showOpportunityDialog = false" />
+        </div>
+        <div class="popup-content">
+          <div
+            v-for="opportunity in customerStore.opportunities"
+            :key="opportunity.id"
+            class="opportunity-item"
+          >
+            <div class="opportunity-header">
+              <div class="opportunity-type-wrapper">
+                <van-tag
+                  :type="getOpportunityTypeTagType(opportunity.type)"
+                  :size="'small' as any"
+                  class="opportunity-type-tag"
+                >
+                  {{ opportunity.type }}
+                </van-tag>
+              </div>
+              <div class="opportunity-status-wrapper">
+                <van-tag
+                  :type="getOpportunityStatusType(opportunity.status)"
+                  :size="'small' as any"
+                >
+                  {{ opportunity.status }}
+                </van-tag>
+                <van-tag
+                  v-if="opportunity.pushStatus"
+                  :type="getPushStatusType(opportunity.pushStatus)"
+                  :size="'small' as any"
+                  class="push-status-tag"
+                >
+                  {{ opportunity.pushStatus }}
+                </van-tag>
+              </div>
+            </div>
+            <div class="opportunity-info">
+              <div class="info-row">
+                <span class="label">触发规则：</span>
+                <span class="value">{{ opportunity.triggerRule }}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">优先级：</span>
+                <van-tag
+                  :type="getPriorityType(opportunity.priority)"
+                  :size="'small' as any"
+                  class="priority-tag"
+                >
+                  {{ opportunity.priority }}
+                </van-tag>
+              </div>
+              <div v-if="opportunity.pushTarget" class="info-row">
+                <span class="label">推送目标：</span>
+                <span class="value">{{ formatPushTarget(opportunity.pushTarget) }}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">创建时间：</span>
+                <span class="value">{{ opportunity.createTime }}</span>
+              </div>
+              <template v-if="opportunity.description">
+                <div
+                  v-for="(item, index) in parseOpportunityDescription(opportunity.description)"
+                  :key="index"
+                  class="info-row"
+                >
+                  <span class="label">{{ item.label }}：</span>
+                  <span class="value">{{ item.value }}</span>
+                </div>
+              </template>
+            </div>
+          </div>
+          <div v-if="!customerStore.opportunities || customerStore.opportunities.length === 0" class="empty-state">
+            <van-empty description="暂无商机信息" />
+          </div>
+        </div>
+      </div>
+    </van-popup>
+
+    <!-- 车辆信息弹窗 -->
+    <van-popup
+      v-model:show="showVehicleDialog"
+      position="bottom"
+      :style="{ height: '70%' }"
+      round
+      lock-scroll
+    >
+      <div class="vehicle-dialog">
+        <div class="popup-header">
+          <h3>车辆信息</h3>
+          <van-icon name="cross" @click="showVehicleDialog = false" />
+        </div>
+        <div class="popup-content">
+          <div
+            v-for="vehicle in customerStore.vehicles"
+            :key="vehicle.id"
+            class="vehicle-item-full"
+          >
+            <div class="vehicle-header">
+              <div class="vehicle-model">{{ vehicle.vehicleModel }}</div>
+              <div class="vehicle-status-wrapper" @click="openVehicleStatusSheet(vehicle.id)">
+                <van-tag
+                  :type="getVehicleStatusType(vehicle.status)"
+                  :size="'small' as any"
+                  class="status-tag-clickable"
+                >
+                  {{ vehicle.status }}
+                </van-tag>
+                <van-icon name="arrow-down" class="status-arrow-icon" />
+              </div>
+              <van-action-sheet
+                v-model:show="vehicleStatusSheets[vehicle.id]"
+                :actions="vehicleStatusOptions"
+                @select="(action: any) => handleVehicleStatusChange(vehicle.id, action.value)"
+                cancel-text="取消"
+              />
+            </div>
+            <div class="vehicle-info">
+              <div v-if="vehicle.licensePlate" class="info-item">
+                <span class="label">车牌号：</span>
+                <span class="value">{{ vehicle.licensePlate }}</span>
+              </div>
+              <div v-if="vehicle.vin" class="info-item">
+                <span class="label">车架号：</span>
+                <span class="value">{{ vehicle.vin }}</span>
+              </div>
+              <div v-if="vehicle.purchaseDate" class="info-item">
+                <span class="label">购买日期：</span>
+                <span class="value">{{ vehicle.purchaseDate }}</span>
+              </div>
+              <div v-if="vehicle.source" class="info-item">
+                <span class="label">来源：</span>
+                <span class="value">{{ vehicle.source }}</span>
+              </div>
+            </div>
+          </div>
+          <div v-if="!customerStore.vehicles || customerStore.vehicles.length === 0" class="empty-state">
+            <van-empty description="暂无车辆信息" />
+          </div>
+        </div>
+      </div>
+    </van-popup>
+
+    <!-- 资产信息弹窗 -->
+    <van-popup
+      v-model:show="showAssetDialog"
+      position="bottom"
+      :style="{ height: '70%' }"
+      round
+      lock-scroll
+    >
+      <div class="asset-dialog">
+        <div class="popup-header">
+          <h3>资产信息</h3>
+          <van-icon name="cross" @click="showAssetDialog = false" />
+        </div>
+        <div class="popup-content">
+          <div
+            v-for="asset in customerStore.assets"
+            :key="asset.id"
+            class="asset-item"
+          >
+            <div class="card-header">
+              <div class="record-title">{{ asset.name }}</div>
+              <van-tag
+                :type="getAssetStatusType(asset.status)"
+                :size="'small' as any"
+              >
+                {{ asset.status }}
+              </van-tag>
+            </div>
+            <div class="card-content">
+              <div class="info-row">
+                <span class="label">类型：</span>
+                <span class="value">{{ asset.type === 'coupon' ? '优惠券' : '代金券' }}</span>
+              </div>
+              <div v-if="asset.amount" class="info-row">
+                <span class="label">面额：</span>
+                <span class="value amount">¥{{ formatAmount(asset.amount) }}</span>
+              </div>
+              <div v-if="asset.discount" class="info-row">
+                <span class="label">折扣：</span>
+                <span class="value">{{ (asset.discount * 10).toFixed(1) }}折</span>
+              </div>
+              <div class="info-row">
+                <span class="label">有效期：</span>
+                <span class="value">{{ asset.validFrom }} 至 {{ asset.validTo }}</span>
+              </div>
+              <div v-if="asset.source" class="info-row">
+                <span class="label">来源：</span>
+                <span class="value">{{ asset.source }}</span>
+              </div>
+            </div>
+          </div>
+          <div v-if="!customerStore.assets || customerStore.assets.length === 0" class="empty-state">
+            <van-empty description="暂无资产信息" />
+          </div>
+        </div>
+      </div>
+    </van-popup>
+
+    <!-- 标签管理弹窗（点击任意标签可操作所有标签） -->
+    <van-popup
+      v-model:show="showTagManager"
+      position="bottom"
+      :style="{ height: '70%' }"
+      round
+      lock-scroll
+    >
+      <div class="tag-manager">
+        <div class="popup-header">
+          <h3>管理标签</h3>
+          <van-icon name="cross" @click="showTagManager = false" />
+        </div>
+        <div class="popup-content">
+          <div class="tag-list">
+            <van-tag
+              v-for="tag in customerStore.tagPool"
+              :key="tag.id"
+              :type="isTagSelectedInManager(tag.name) ? 'primary' : 'default'"
+              size="medium"
+              class="tag-item"
+              :class="{ 'is-selected': isTagSelectedInManager(tag.name) }"
+              @click="toggleTag(tag.name)"
+            >
+              {{ tag.name }}
+            </van-tag>
+          </div>
+        </div>
+        <div class="popup-footer">
+          <van-button
+            type="default"
+            size="large"
+            @click="showTagManager = false"
+          >
+            取消
+          </van-button>
+          <van-button
+            type="primary"
+            size="large"
+            :loading="savingTags"
+            @click="handleSaveTags"
+          >
+            确定
+          </van-button>
+        </div>
+      </div>
+    </van-popup>
+
     <!-- 基础信息编辑弹窗 -->
     <van-popup
       v-model:show="showBasicInfoEditor"
@@ -659,16 +817,19 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useCustomerStore } from '@/stores/customer'
 import C360Field from '@/components/C360Field.vue'
 import Maintenance from '@/views/Maintenance.vue'
+import MaintenanceRecords from '@/views/MaintenanceRecords.vue'
 import ConflictResolver from '@/components/business/ConflictResolver.vue'
 import PlatformFlow from '@/components/business/PlatformFlow.vue'
 import MobileEditor from '@/components/business/MobileEditor.vue'
+import OperationLogDialog from '@/components/business/OperationLogDialog.vue'
 import { showToast, showLoadingToast, closeToast } from 'vant'
 import { customerApi } from '@/api/customer'
 import type { TagPool, MobileData } from '@/api/customer'
 
 const customerStore = useCustomerStore()
-const activeTab = ref('profile')
+const activeTab = ref('maintenance')
 const showTagSelector = ref(false)
+const showTagManager = ref(false)
 const showPreferredCarTagSelector = ref(false)
 const selectedPreferredCarTags = ref<string[]>([])
 const savingPreferredCarTags = ref(false)
@@ -677,6 +838,11 @@ const showPlatformFlow = ref(false)
 const showMobileManager = ref(false)
 const showBasicInfoEditor = ref(false)
 const savingBasicInfo = ref(false)
+const showOperationLogDialog = ref(false)
+const operationLogsLoading = ref(false)
+const showOpportunityDialog = ref(false)
+const showVehicleDialog = ref(false)
+const showAssetDialog = ref(false)
 const basicInfoFormRef = ref()
 const basicInfoForm = ref({
   name: '',
@@ -692,6 +858,46 @@ const mobileRules = [
   { required: true, message: '请输入手机号' },
   { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确' },
 ]
+
+// 客户类型相关
+const isCompany = computed(() => {
+  return customerStore.profile?.customerType?.value === '公司'
+})
+
+const customerTypeText = computed(() => {
+  return customerStore.profile?.customerType?.value === '公司' ? '公司' : '个人'
+})
+
+const customerTypeIcon = computed(() => {
+  return isCompany.value ? 'shop-o' : 'user-o'
+})
+
+// 电话相关
+const displayedPhones = computed(() => {
+  if (!customerStore.profile?.mobile || !('items' in customerStore.profile.mobile)) {
+    return []
+  }
+  const items = (customerStore.profile.mobile as MobileData).items
+  return items.slice(0, 2) // 只显示前2个
+})
+
+const hasMorePhones = computed(() => {
+  if (!customerStore.profile?.mobile || !('items' in customerStore.profile.mobile)) {
+    return false
+  }
+  const items = (customerStore.profile.mobile as MobileData).items
+  // 只要有电话号码就显示"更多"按钮，让用户可以管理号码
+  return items.length > 0
+})
+
+// 商机类型列表（从opportunities中提取所有类型）
+const opportunityTypeList = computed(() => {
+  if (!customerStore.opportunities || customerStore.opportunities.length === 0) {
+    return []
+  }
+  const types = customerStore.opportunities.map(opp => opp.type)
+  return Array.from(new Set(types)) // 去重
+})
 
 // 商机列表（支持多条，从 sources 中提取或使用 value）
 const opportunityList = computed(() => {
@@ -709,6 +915,38 @@ const opportunityList = computed(() => {
   return opportunityType.value ? [String(opportunityType.value)] : []
 })
 
+// 最近到期的优惠券
+const nearestExpiringAsset = computed(() => {
+  if (!customerStore.assets || customerStore.assets.length === 0) {
+    return null
+  }
+  // 按到期日期排序，取最近的一个
+  const sorted = [...customerStore.assets].sort((a, b) => {
+    const dateA = new Date(a.validTo).getTime()
+    const dateB = new Date(b.validTo).getTime()
+    return dateA - dateB
+  })
+  return sorted[0]
+})
+
+// 显示的车辆（最多2辆）
+const displayedVehicles = computed(() => {
+  if (!customerStore.vehicles || customerStore.vehicles.length === 0) {
+    return []
+  }
+  return customerStore.vehicles.slice(0, 2)
+})
+
+// 车辆状态选项
+const vehicleStatusOptions = [
+  { name: '已售', value: '已售' },
+  { name: '自用', value: '自用' },
+  { name: '维修中', value: '维修中' },
+]
+
+// 车辆状态选择器显示状态
+const vehicleStatusSheets = ref<Record<string, boolean>>({})
+
 // 分群列表（支持多条，从 sources 中提取或使用 value）
 const segmentList = computed(() => {
   const segmentType = customerStore.profile?.segmentType
@@ -725,6 +963,35 @@ const segmentList = computed(() => {
   return segmentType.value ? [String(segmentType.value)] : []
 })
 
+// 最新操作信息文本
+const latestOperationText = computed(() => {
+  const profile = customerStore.profile
+  if (!profile) {
+    return ''
+  }
+  
+  const latestOperation = profile.latestOperation
+  if (!latestOperation) {
+    return ''
+  }
+  
+  // 格式化时间
+  const formatTime = (time: string) => {
+    try {
+      const date = new Date(time)
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      return `${year}年${month}月${day}日`
+    } catch (e) {
+      return time
+    }
+  }
+  
+  const timeText = formatTime(latestOperation.operationTime)
+  return `该顾客已被 ${latestOperation.operator} ${latestOperation.operationType} （${timeText}）`
+})
+
 // 可用标签（排除已选标签）
 const availableTags = computed(() => {
   const selectedTags = customerStore.profile?.tags || []
@@ -738,20 +1005,20 @@ const isTagSelected = (tagName: string) => {
   return customerStore.profile?.tags.includes(tagName) || false
 }
 
-// 获取标签类型（用于颜色）
+// 获取标签类型（用于颜色 - 大厂风格：统一使用 default 和 primary）
 const getTagType = (tagName: string): any => {
   const tag = customerStore.tagPool.find((t) => t.name === tagName)
   if (!tag) return 'default'
   
-  // 根据标签名称映射类型
+  // 根据标签名称映射类型（简化色彩，主要使用 default 和 primary）
   const typeMap: Record<string, any> = {
-    '战败客户': 'danger',
-    '高意向': 'success',
+    '战败客户': 'default',
+    '高意向': 'primary',
     '置换需求': 'primary',
     '首购客户': 'primary',
-    'VIP客户': 'warning',
+    'VIP客户': 'primary',
     '潜在客户': 'default',
-    '已成交': 'success',
+    '已成交': 'primary',
     '流失客户': 'default',
   }
   
@@ -782,6 +1049,72 @@ const handleRemoveTag = async (tagName: string) => {
   await customerStore.removeTag(tagName)
 }
 
+// 标签管理相关
+const selectedTags = ref<string[]>([])
+const savingTags = ref(false)
+
+// 初始化选中的标签
+watch(
+  () => customerStore.profile?.tags,
+  (tags) => {
+    if (tags) {
+      selectedTags.value = [...tags]
+    }
+  },
+  { immediate: true }
+)
+
+// 切换标签选中状态
+const toggleTag = (tagName: string) => {
+  const index = selectedTags.value.indexOf(tagName)
+  if (index > -1) {
+    selectedTags.value.splice(index, 1)
+  } else {
+    selectedTags.value.push(tagName)
+  }
+}
+
+// 标签管理弹窗中判断标签是否选中（使用 selectedTags）
+const isTagSelectedInManager = (tagName: string) => {
+  return selectedTags.value.includes(tagName)
+}
+
+// 保存标签
+const handleSaveTags = async () => {
+  savingTags.value = true
+  showLoadingToast({
+    message: '保存中...',
+    forbidClick: true,
+  })
+
+  try {
+    const currentTags = customerStore.profile?.tags || []
+    const addedTags = selectedTags.value.filter(t => !currentTags.includes(t))
+    const removedTags = currentTags.filter(t => !selectedTags.value.includes(t))
+
+    // 先添加新标签
+    for (const tagName of addedTags) {
+      const tag = customerStore.tagPool.find(t => t.name === tagName)
+      if (tag) {
+        await customerStore.addTag(tag.id)
+      }
+    }
+
+    // 再删除标签
+    for (const tagName of removedTags) {
+      await customerStore.removeTag(tagName)
+    }
+
+    showTagManager.value = false
+    showToast('保存成功')
+  } catch (error: any) {
+    showToast(error.message || '保存失败，请重试')
+  } finally {
+    savingTags.value = false
+    closeToast()
+  }
+}
+
 // 格式化金额
 const formatAmount = (amount: number) => {
   return amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -807,12 +1140,12 @@ const getTransactionStatusType = (status: string): any => {
   return typeMap[status] || 'default'
 }
 
-// 获取车辆状态类型
+// 获取车辆状态类型（大厂风格：统一使用 default 和 primary）
 const getVehicleStatusType = (status: string): any => {
   const typeMap: Record<string, any> = {
-    '已售': 'success',
-    '在售': 'primary',
-    '维修中': 'warning',
+    '已售': 'default',
+    '自用': 'primary',
+    '维修中': 'default',
   }
   return typeMap[status] || 'default'
 }
@@ -901,6 +1234,82 @@ const getAppointmentStatusType = (status: string): any => {
     '已取消': 'default',
   }
   return typeMap[status] || 'default'
+}
+
+// 获取商机类型标签类型（大厂风格：统一使用 default 和 primary）
+const getOpportunityTypeTagType = (type: string): any => {
+  const typeMap: Record<string, any> = {
+    '维保到期': 'primary',
+    '代金券到期': 'primary',
+    '高价值客户': 'primary',
+    '流失预警': 'primary',
+    '复购机会': 'primary',
+    '升级机会': 'primary',
+  }
+  return typeMap[type] || 'primary'
+}
+
+// 获取商机状态类型
+const getOpportunityStatusType = (status: string): any => {
+  const typeMap: Record<string, any> = {
+    '待处理': 'warning',
+    '处理中': 'primary',
+    '已推送': 'primary',
+    '已完成': 'success',
+  }
+  return typeMap[status] || 'default'
+}
+
+// 获取推送状态类型
+const getPushStatusType = (status: string): any => {
+  const typeMap: Record<string, any> = {
+    '待推送': 'warning',
+    '成功': 'success',
+    '失败': 'danger',
+  }
+  return typeMap[status] || 'default'
+}
+
+// 解析商机详情描述，将 "label：value\nlabel：value" 格式解析为数组
+const parseOpportunityDescription = (description: string): Array<{ label: string; value: string }> => {
+  if (!description) return []
+  
+  const lines = description.split('\n').filter(line => line.trim())
+  return lines.map(line => {
+    // 匹配 "label：value" 或 "label:value" 格式
+    const match = line.match(/^(.+?)[：:](.+)$/)
+    if (match) {
+      return {
+        label: match[1].trim(),
+        value: match[2].trim(),
+      }
+    }
+    // 如果没有匹配到，返回整行作为 value
+    return {
+      label: '',
+      value: line.trim(),
+    }
+  })
+}
+
+// 获取优先级类型
+const getPriorityType = (priority: string): any => {
+  const typeMap: Record<string, any> = {
+    '高': 'danger',
+    '中': 'warning',
+    '低': 'default',
+  }
+  return typeMap[priority] || 'default'
+}
+
+// 格式化推送目标
+const formatPushTarget = (target: string): string => {
+  const targetMap: Record<string, string> = {
+    'bdc': 'BDC系统',
+    'wechat': '微信',
+    'crm': 'CRM系统',
+  }
+  return targetMap[target] || target
 }
 
 // 处理冲突提交完成
@@ -1035,18 +1444,71 @@ const handleOpenBasicInfoEditor = () => {
   showBasicInfoEditor.value = true
 }
 
+// 加载操作日志
+const loadOperationLogs = async () => {
+  operationLogsLoading.value = true
+  try {
+    await customerStore.fetchOperationLogs()
+  } catch (error) {
+    console.error('加载操作日志失败:', error)
+  } finally {
+    operationLogsLoading.value = false
+  }
+}
+
+// 处理优惠券卡片点击
+const handleCouponCardClick = () => {
+  if (customerStore.assets && customerStore.assets.length > 1) {
+    showAssetDialog.value = true
+  }
+}
+
+// 打开车辆状态选择器
+const openVehicleStatusSheet = (vehicleId: string) => {
+  vehicleStatusSheets.value[vehicleId] = true
+}
+
+// 处理车辆状态变更
+const handleVehicleStatusChange = async (vehicleId: string, status: string) => {
+  vehicleStatusSheets.value[vehicleId] = false
+  showLoadingToast({
+    message: '更新中...',
+    forbidClick: true,
+  })
+  try {
+    const res = await customerApi.updateVehicleStatus(vehicleId, status)
+    if (res.code === 200) {
+      // 更新本地数据
+      const vehicle = customerStore.vehicles.find(v => v.id === vehicleId)
+      if (vehicle) {
+        vehicle.status = status
+      }
+      showToast('更新成功')
+    } else {
+      showToast(res.message || '更新失败，请重试')
+    }
+  } catch (error: any) {
+    showToast(error.message || '更新失败，请重试')
+  } finally {
+    closeToast()
+  }
+}
+
 // 初始化
 onMounted(async () => {
   console.log('Home 组件 mounted，开始加载数据')
   await customerStore.fetchProfile()
   await customerStore.fetchTagPool()
-  // 并行加载交易记录、车辆关联、资产中心、预约信息、平台溯源
+  // 并行加载交易记录、车辆关联、资产中心、预约信息、平台溯源、商机信息、操作日志
+  // 注意：保险记录使用滚动加载，不在初始化时加载
   await Promise.all([
     customerStore.fetchTransactions(),
     customerStore.fetchVehicles(),
     customerStore.fetchAssets(),
     customerStore.fetchAppointments(),
     customerStore.fetchPlatformSources(),
+    customerStore.fetchOpportunities(),
+    loadOperationLogs(),
   ])
   console.log('数据加载完成，profile:', customerStore.profile)
   console.log('数据加载完成，customerType:', customerStore.profile?.customerType)
@@ -1066,11 +1528,700 @@ onMounted(async () => {
 .home-container {
   min-height: 100vh;
   background: #f7f8fa;
-  padding: 12px;
+  padding: 8px;
   max-width: 100%;
   box-sizing: border-box;
   padding-bottom: 20px; // 确保底部有足够空间
   overflow-y: auto; // 允许滚动
+}
+
+// 首屏内容
+.first-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+// 姓名卡片（名片样式优化 - 大厂风格）
+.info-card.name-card {
+  background: #ffffff !important;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid #ebedf0;
+  position: relative;
+  
+  // 左侧装饰条
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--van-tag-primary-color);
+  }
+  
+  .name-section {
+    padding: 16px 18px;
+    padding-bottom: 12px;
+    position: relative;
+    
+    // 分隔线，从蓝色装饰条右边开始
+    &::after {
+      content: '';
+      position: absolute;
+      left: 4px; // 从蓝色装饰条右边开始
+      right: 0;
+      bottom: 0;
+      height: 1px;
+      background: #ebedf0;
+    }
+    
+    .name-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      
+      .name-with-icon {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        
+        .name-text {
+          font-size: 24px;
+          font-weight: 600;
+          color: #1a1a1a;
+          letter-spacing: 0.2px;
+          line-height: 1.3;
+        }
+        
+        .source-icon {
+          font-size: 18px;
+          color: var(--van-tag-primary-color);
+          cursor: pointer;
+          transition: all 0.2s;
+          padding: 4px;
+          border-radius: 50%;
+          
+          &:hover {
+            background: #e8f4ff;
+            transform: scale(1.1);
+          }
+          
+          &:active {
+            transform: scale(0.95);
+          }
+        }
+      }
+      
+      .identity-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 12px;
+        background: #f0f7ff;
+        border-radius: 16px;
+        border: none;
+        
+        .identity-icon {
+          font-size: 14px;
+          color: var(--van-tag-primary-color);
+          
+          &.is-company {
+            color: var(--van-tag-primary-color);
+          }
+        }
+        
+        .identity-text {
+          font-size: 12px;
+          color: var(--van-tag-primary-color);
+          font-weight: 500;
+          letter-spacing: 0.2px;
+        }
+      }
+    }
+    
+    .customer-id {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+      
+      .id-label {
+        font-size: 12px;
+        color: #969799;
+        font-weight: 400;
+        letter-spacing: 0.2px;
+      }
+      
+      .id-value {
+        font-size: 12px;
+        color: #646566;
+        font-weight: 500;
+        font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+        letter-spacing: 0.5px;
+        padding: 2px 8px;
+        background: #f7f8fa;
+        border-radius: 4px;
+      }
+    }
+  }
+  
+  .card-content-wrapper {
+    padding: 12px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    
+    .phone-section {
+      .section-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #323233;
+        margin-bottom: 8px;
+      }
+      
+      .phone-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        
+        .phone-item {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px 8px;
+          background: #f7f8fa;
+          border-radius: 5px;
+          border: 1px solid #ebedf0;
+          
+          &.is-primary {
+            background: #f0f7ff;
+            border: 1px solid var(--van-tag-primary-color);
+          }
+          
+          .phone-number {
+            font-size: 12px;
+            font-weight: 500;
+            color: #323233;
+          }
+        }
+        
+        .more-phone-btn {
+          margin-left: auto;
+        }
+      }
+    }
+    
+    .opportunity-section {
+      .section-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #323233;
+        margin-bottom: 8px;
+      }
+      
+      .opportunity-types {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        cursor: pointer;
+        
+        .opportunity-tag {
+          cursor: pointer;
+        }
+      }
+    }
+  }
+}
+
+
+// 优惠券卡片
+.coupon-card {
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:active {
+    transform: scale(0.98);
+  }
+  
+  .coupon-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid #ebedf0;
+    
+    .coupon-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #323233;
+    }
+    
+    .arrow-icon {
+      font-size: 14px;
+      color: #969799;
+    }
+  }
+  
+  .coupon-info {
+    padding: 10px 12px;
+    
+    .coupon-row {
+      display: flex;
+      margin-bottom: 6px;
+      font-size: 13px;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+      
+      .label {
+        color: #969799;
+        min-width: 65px;
+        flex-shrink: 0;
+      }
+      
+      .value {
+        color: #323233;
+        flex: 1;
+        
+        &.amount {
+          color: #323233;
+          font-weight: 600;
+        }
+      }
+    }
+  }
+}
+
+// 车辆卡片
+.vehicle-card {
+  .card-header {
+    padding: 10px 12px;
+  }
+  
+  .vehicle-list {
+    padding: 10px 12px;
+    
+    .vehicle-item {
+      padding: 10px;
+      background: #f7f8fa;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+      
+      .vehicle-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        
+        .vehicle-model {
+          font-size: 14px;
+          font-weight: 600;
+          color: #323233;
+        }
+        
+        .vehicle-status-wrapper {
+          display: flex;
+          align-items: center;
+          gap: 3px;
+          cursor: pointer;
+          padding: 3px 6px;
+          border-radius: 4px;
+          transition: background-color 0.2s;
+          
+          &:hover {
+            background-color: #ebedf0;
+          }
+          
+          &:active {
+            background-color: #dcdee0;
+          }
+          
+          .status-tag-clickable {
+            margin: 0;
+          }
+          
+          .status-arrow-icon {
+            font-size: 11px;
+            color: #969799;
+            transition: transform 0.2s;
+          }
+          
+          &:active .status-arrow-icon {
+            transform: rotate(180deg);
+          }
+        }
+      }
+      
+      .vehicle-info {
+        .info-item {
+          display: flex;
+          margin-bottom: 4px;
+          font-size: 12px;
+          
+          &:last-child {
+            margin-bottom: 0;
+          }
+          
+          .label {
+            color: #969799;
+            min-width: 60px;
+            flex-shrink: 0;
+          }
+          
+          .value {
+            color: #323233;
+            flex: 1;
+          }
+        }
+      }
+    }
+  }
+}
+
+// 标签卡片
+.tags-card {
+  .card-header {
+    padding: 10px 12px;
+  }
+  
+  .tags-content {
+    padding: 10px 12px;
+    
+    .tags-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      
+      .clickable-tag {
+        cursor: pointer;
+        transition: all 0.2s;
+        
+        &:active {
+          transform: scale(0.95);
+        }
+      }
+    }
+    
+    .empty-tags {
+      color: #969799;
+      font-size: 12px;
+    }
+  }
+}
+
+// 弹窗样式
+.opportunity-dialog,
+.vehicle-dialog,
+.asset-dialog,
+.tag-manager {
+  padding: 16px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  
+  .popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #ebedf0;
+    margin-bottom: 0;
+    flex-shrink: 0;
+    
+    h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: #323233;
+    }
+    
+    .van-icon {
+      font-size: 20px;
+      color: #969799;
+      cursor: pointer;
+      padding: 4px;
+      
+      &:active {
+        opacity: 0.7;
+      }
+    }
+  }
+  
+  .popup-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-top: 16px;
+    min-height: 0; // 确保可以滚动
+  }
+  
+  .popup-footer {
+    display: flex;
+    gap: 12px;
+    padding-top: 16px;
+    border-top: 1px solid #ebedf0;
+    flex-shrink: 0;
+    margin-top: auto;
+    
+    .van-button {
+      flex: 1;
+    }
+  }
+  
+  .opportunity-item {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 16px;
+    margin-bottom: 12px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    .opportunity-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 8px;
+      
+      .opportunity-type-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        min-width: 0;
+        
+        .opportunity-type-tag {
+          margin: 0;
+          font-weight: 500;
+        }
+      }
+      
+      .opportunity-status-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+        
+        .push-status-tag {
+          margin: 0;
+        }
+      }
+    }
+    
+    .opportunity-info {
+      .info-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        font-size: 14px;
+        min-height: 24px;
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+        
+        .label {
+          color: #969799;
+          min-width: 80px;
+          flex-shrink: 0;
+        }
+        
+        .value {
+          color: #323233;
+          flex: 1;
+          word-break: break-all;
+        }
+        
+        .priority-tag {
+          margin: 0;
+        }
+      }
+    }
+  }
+  
+  .asset-item {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-bottom: 12px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    .card-header {
+      padding: 16px;
+      border-bottom: 1px solid #ebedf0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      
+      .record-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #323233;
+      }
+    }
+    
+    .card-content {
+      padding: 16px;
+      
+      .info-row {
+        display: flex;
+        margin-bottom: 12px;
+        font-size: 14px;
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+        
+        .label {
+          color: #969799;
+          min-width: 80px;
+          flex-shrink: 0;
+        }
+        
+        .value {
+          color: #323233;
+          flex: 1;
+          word-break: break-all;
+          
+          &.amount {
+            color: #ee0a24;
+            font-weight: 600;
+            font-size: 16px;
+          }
+        }
+      }
+    }
+  }
+  
+  .vehicle-item-full {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 16px;
+    margin-bottom: 12px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    .vehicle-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      
+      .vehicle-model {
+        font-size: 16px;
+        font-weight: 600;
+        color: #323233;
+      }
+      
+      .vehicle-status-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+        
+        &:hover {
+          background-color: #f7f8fa;
+        }
+        
+        &:active {
+          background-color: #ebedf0;
+        }
+        
+        .status-tag-clickable {
+          margin: 0;
+        }
+        
+        .status-arrow-icon {
+          font-size: 12px;
+          color: #969799;
+          transition: transform 0.2s;
+        }
+        
+        &:active .status-arrow-icon {
+          transform: rotate(180deg);
+        }
+      }
+    }
+    
+    .vehicle-info {
+      .info-item {
+        display: flex;
+        margin-bottom: 8px;
+        font-size: 14px;
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+        
+        .label {
+          color: #969799;
+          min-width: 80px;
+          flex-shrink: 0;
+        }
+        
+        .value {
+          color: #323233;
+          flex: 1;
+        }
+      }
+    }
+  }
+  
+  // 标签管理弹窗特殊样式
+  &.tag-manager {
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px 0;
+    }
+    
+    .tag-item {
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+      
+      &:active {
+        transform: scale(0.95);
+        opacity: 0.8;
+      }
+      
+      &.is-selected {
+        // 选中状态已经有 primary 类型的样式，这里可以添加额外效果
+        box-shadow: 0 2px 4px rgba(25, 137, 250, 0.2);
+      }
+    }
+  }
+  
+  // 空状态样式
+  .empty-state {
+    padding: 40px 0;
+    text-align: center;
+  }
 }
 
 .main-tabs {
@@ -1173,7 +2324,7 @@ onMounted(async () => {
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   margin-bottom: 16px;
-  border: 2px solid #1989fa;
+  border: 2px solid var(--van-tag-primary-color);
 
   .card-header {
     padding: 16px;
@@ -1184,7 +2335,7 @@ onMounted(async () => {
   .card-title {
     font-size: 16px;
     font-weight: 600;
-    color: #1989fa;
+    color: var(--van-tag-primary-color);
   }
 
   .card-content {
@@ -1193,14 +2344,25 @@ onMounted(async () => {
 }
 
 .conflict-alert-top {
-  margin-bottom: 12px;
-  border-radius: 8px;
+  margin-bottom: 4px;
+  border-radius: 6px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(255, 152, 106, 0.2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 
   :deep(.van-notice-bar) {
-    padding: 12px 16px;
+    padding: 6px 10px;
     transition: opacity 0.2s;
+    font-size: 12px;
+    line-height: 1.4;
+    background: #fff7e6;
+    color: #d46b08;
+    border: 1px solid #ffe7ba;
+    min-height: auto;
+
+    .van-notice-bar__left-icon {
+      font-size: 14px;
+      margin-right: 6px;
+    }
 
     &:active {
       opacity: 0.8;
@@ -1226,12 +2388,39 @@ onMounted(async () => {
   }
 
   .source-link {
-    color: #1989fa;
+    color: var(--van-tag-primary-color);
     text-decoration: underline;
     cursor: pointer;
     margin-left: 4px;
     white-space: nowrap;
     flex-shrink: 0;
+  }
+}
+
+.operation-alert {
+  margin-bottom: 4px;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  :deep(.van-notice-bar) {
+    padding: 6px 10px;
+    transition: opacity 0.2s;
+    font-size: 12px;
+    line-height: 1.4;
+    background: #e6f7ff;
+    color: var(--van-tag-primary-color);
+    border: 1px solid #91d5ff;
+    min-height: auto;
+
+    .van-notice-bar__left-icon {
+      font-size: 14px;
+      margin-right: 6px;
+    }
+
+    &:active {
+      opacity: 0.8;
+    }
   }
 }
 
@@ -1329,13 +2518,18 @@ onMounted(async () => {
 
 .info-card {
   background: white;
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  margin-top: 12px;
+  margin-top: 0;
+  
+  // 排除名片卡片，名片卡片使用特殊样式
+  &:not(.name-card) {
+    background: white;
+  }
 
   &.mobile-manager-card {
-    border: 2px solid #1989fa;
+    border: 2px solid var(--van-tag-primary-color);
     
     .card-header {
       background: linear-gradient(135deg, #e8f4ff 0%, #d0e8ff 100%);
@@ -1346,7 +2540,7 @@ onMounted(async () => {
   }
 
   .card-header {
-    padding: 16px;
+    padding: 10px 12px;
     border-bottom: 1px solid #ebedf0;
     display: flex;
     justify-content: space-between;
@@ -1354,13 +2548,30 @@ onMounted(async () => {
   }
 
   .card-title {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
     color: #323233;
   }
 
   .card-content {
     padding: 0;
+    
+    // 基本信息卡片样式优化
+    :deep(.van-cell) {
+      padding: 8px 12px;
+      font-size: 13px;
+      
+      .van-cell__title {
+        font-size: 13px;
+        color: #969799;
+        min-width: 70px;
+      }
+      
+      .van-cell__value {
+        font-size: 13px;
+        color: #323233;
+      }
+    }
   }
 }
 
@@ -1425,7 +2636,7 @@ onMounted(async () => {
 
     &.is-primary {
       background: #e8f4ff;
-      border-color: #1989fa;
+      border-color: var(--van-tag-primary-color);
     }
 
     .mobile-info {
@@ -1761,6 +2972,13 @@ onMounted(async () => {
     }
   }
 
+  .operation-alert {
+    :deep(.van-notice-bar) {
+      padding: 10px 12px;
+      font-size: 13px;
+    }
+  }
+
   .important-info {
     grid-template-columns: 1fr;
     gap: 8px;
@@ -1843,6 +3061,94 @@ onMounted(async () => {
         color: #323233;
         flex: 1;
         word-break: break-all;
+      }
+    }
+  }
+}
+
+.opportunity-card {
+  border: 2px solid #ff976a;
+  
+  .card-header {
+    background: linear-gradient(135deg, #fff4e8 0%, #ffe8d0 100%);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    
+    .opportunity-header-icon {
+      font-size: 20px;
+      color: #ff976a;
+    }
+  }
+}
+
+.opportunity-item {
+  padding: 16px;
+  border-bottom: 1px solid #ebedf0;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .opportunity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .opportunity-type-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+
+      .opportunity-type-tag {
+        margin: 0;
+        font-weight: 500;
+      }
+    }
+
+    .opportunity-status-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+
+      .push-status-tag {
+        margin: 0;
+      }
+    }
+  }
+
+  .opportunity-info {
+    .info-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 14px;
+      min-height: 24px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .label {
+        color: #969799;
+        min-width: 80px;
+        flex-shrink: 0;
+      }
+
+      .value {
+        color: #323233;
+        flex: 1;
+        word-break: break-all;
+      }
+
+      .priority-tag {
+        margin: 0;
       }
     }
   }

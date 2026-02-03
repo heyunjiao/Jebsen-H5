@@ -61,9 +61,393 @@ MOCK 模式：跳过流程，直接发放 fake_token。
 - 所有弹窗必须设置 lock-scroll 属性，防止背景页面滚动。
 - 禁止在弹窗内再次弹出弹窗（禁止二次弹窗），详情信息应在当前弹窗内直接展示。
 
-5. 开发建议 (Cursor 指令偏好)
+5. 列表滚动加载规范（必须遵循）
+所有列表展示必须支持滚动加载（无限滚动），禁止一次性加载所有数据。
+
+实现标准：
+
+5.1 组件层面
+- 必须使用 Vant 的 `van-list` 组件实现滚动加载
+- 标准模板结构：
+```vue
+<van-list
+  v-model:loading="loading"
+  :finished="finished"
+  finished-text="没有更多了"
+  @load="onLoad"
+>
+  <!-- 列表项 -->
+  <div v-for="item in list" :key="item.id" class="list-item">
+    <!-- 内容 -->
+  </div>
+  
+  <!-- 空状态 -->
+  <div v-if="!loading && list.length === 0" class="empty-state">
+    <van-empty description="暂无数据" />
+  </div>
+</van-list>
+```
+
+- 标准脚本结构：
+```typescript
+const loading = ref(false)
+const finished = ref(false)
+const page = ref(1)
+const pageSize = ref(5) // 默认每页 5 条
+
+const onLoad = async () => {
+  try {
+    const hasMore = await store.fetchXXXPage(page.value, pageSize.value)
+    if (hasMore) {
+      page.value++
+    } else {
+      finished.value = true
+    }
+  } catch (error) {
+    console.error('加载失败:', error)
+    finished.value = true
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  page.value = 1
+  finished.value = false
+  store.clearXXX() // 清空数据
+})
+```
+
+5.2 API 层面
+- 所有列表接口必须支持分页参数：`page`（页码，从 1 开始）、`pageSize`（每页数量）
+- 返回格式必须统一为：
+```typescript
+{
+  code: 200,
+  message: 'success',
+  data: {
+    list: T[],        // 当前页数据列表
+    hasMore: boolean, // 是否还有更多数据
+    total: number     // 总数据量（可选）
+  }
+}
+```
+
+- API 方法命名：`getXXXRecords` 或 `getXXXList`
+- 参数类型：
+```typescript
+getXXXRecords: (params?: {
+  customerId?: string
+  page?: number
+  pageSize?: number
+}): Promise<ApiResponse<{ list: T[]; hasMore: boolean; total: number }>>
+```
+
+- API 文件结构规范（src/api/customer.ts）：
+```typescript
+// 1. 导入类型和依赖
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios'
+import type { XXXRecord, ... } from '@/types/customer'
+import { mockRequestInterceptor } from '@/mock'
+
+// 2. API 响应基础类型（必须）
+export interface ApiResponse<T> {
+  code: number
+  message: string
+  data: T
+}
+
+// 3. 导出类型供外部使用
+export type { XXXRecord, ... }
+
+// 4. 创建 axios 实例
+const request = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  timeout: 10000,
+})
+
+// 5. 请求拦截器（必须包含 Mock 支持）
+request.interceptors.request.use(
+  async (config) => {
+    // 添加 token 等认证信息
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    
+    // Mock 拦截（开发环境）
+    const mockResponse = await mockRequestInterceptor(config)
+    if (mockResponse) {
+      ;(config as any).adapter = async () => mockResponse
+    }
+    
+    return config
+  },
+  (error) => Promise.reject(error)
+)
+
+// 6. 响应拦截器（统一错误处理）
+request.interceptors.response.use(
+  (response) => {
+    const res = response.data
+    // 统一响应格式验证
+    if (res.code !== 200) {
+      return Promise.reject(new Error(res.message || '请求失败'))
+    }
+    return res
+  },
+  (error) => {
+    // 统一错误处理
+    return Promise.reject(error)
+  }
+)
+
+// 7. API 方法定义（统一导出为对象）
+export const customerApi = {
+  // 列表接口（必须支持分页）
+  getXXXRecords: (params?: {
+    customerId?: string
+    page?: number
+    pageSize?: number
+  }): Promise<ApiResponse<{ list: T[]; hasMore: boolean; total: number }>> => {
+    return request.get('/customer/xxx/records', { params })
+  },
+  
+  // 单个资源接口
+  getXXX: (id: string): Promise<ApiResponse<XXX>> => {
+    return request.get(`/customer/xxx/${id}`)
+  },
+  
+  // 创建接口
+  createXXX: (data: CreateXXXData): Promise<ApiResponse<XXX>> => {
+    return request.post('/customer/xxx', data)
+  },
+  
+  // 更新接口
+  updateXXX: (id: string, data: UpdateXXXData): Promise<ApiResponse<XXX>> => {
+    return request.put(`/customer/xxx/${id}`, data)
+  },
+  
+  // 删除接口
+  deleteXXX: (id: string): Promise<ApiResponse<{ success: boolean }>> => {
+    return request.delete(`/customer/xxx/${id}`)
+  },
+}
+```
+
+- API 方法命名规范：
+  - 列表查询：`getXXXRecords` 或 `getXXXList`（必须支持分页）
+  - 单个查询：`getXXX` 或 `getXXXById`
+  - 创建：`createXXX` 或 `addXXX`
+  - 更新：`updateXXX` 或 `editXXX`
+  - 删除：`deleteXXX` 或 `removeXXX`
+  - 批量操作：`batchXXX` 或 `bulkXXX`
+
+- 列表接口必须遵循的规范：
+  - 所有列表接口必须支持 `page` 和 `pageSize` 参数
+  - 返回格式必须为 `{ list, hasMore, total }`
+  - 默认 `pageSize` 为 5
+  - `page` 从 1 开始计数
+
+6. API 接口定义完整规范（必须遵循）
+
+6.1 API 文件结构
+- 位置：`src/api/` 目录下，按业务模块划分
+- 命名：使用业务模块名，如 `customer.ts`、`order.ts`
+- 导出：统一导出为 `xxxApi` 对象，如 `export const customerApi = { ... }`
+
+6.2 API 响应格式标准
+- 所有 API 必须使用 `ApiResponse<T>` 类型：
+```typescript
+export interface ApiResponse<T> {
+  code: number      // 200 表示成功，其他表示失败
+  message: string   // 响应消息，成功时为 'success'
+  data: T          // 响应数据，类型由具体接口决定
+}
+```
+
+6.3 列表接口标准定义（必须）
+- 所有列表接口必须支持分页
+- 标准定义格式：
+```typescript
+// 列表接口（支持分页）
+getXXXRecords: (params?: {
+  customerId?: string  // 客户ID（可选）
+  page?: number        // 页码，从 1 开始，默认 1
+  pageSize?: number    // 每页数量，默认 5
+}): Promise<ApiResponse<{
+  list: XXXRecord[]    // 当前页数据列表
+  hasMore: boolean     // 是否还有更多数据
+  total: number        // 总数据量（可选）
+}>>
+```
+
+6.4 非列表接口标准定义
+- 单个资源查询：
+```typescript
+getXXX: (id: string, customerId?: string): Promise<ApiResponse<XXX>>
+```
+- 创建资源：
+```typescript
+createXXX: (data: CreateXXXData): Promise<ApiResponse<XXX>>
+```
+- 更新资源：
+```typescript
+updateXXX: (id: string, data: UpdateXXXData): Promise<ApiResponse<XXX>>
+```
+- 删除资源：
+```typescript
+deleteXXX: (id: string): Promise<ApiResponse<{ success: boolean }>>
+```
+
+6.5 请求拦截器规范
+- 必须包含 token 认证
+- 必须支持 Mock 拦截（开发环境）
+- 必须使用 `mockRequestInterceptor` 处理 Mock 请求
+- 示例：
+```typescript
+request.interceptors.request.use(
+  async (config) => {
+    // 1. 添加认证信息
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    
+    // 2. Mock 拦截（开发环境）
+    const mockResponse = await mockRequestInterceptor(config)
+    if (mockResponse) {
+      ;(config as any).adapter = async () => mockResponse
+    }
+    
+    return config
+  },
+  (error) => Promise.reject(error)
+)
+```
+
+6.6 响应拦截器规范
+- 统一处理响应格式
+- 统一错误处理
+- 验证 `code === 200`
+- 示例：
+```typescript
+request.interceptors.response.use(
+  (response) => {
+    const res = response.data
+    if (res.code !== 200) {
+      return Promise.reject(new Error(res.message || '请求失败'))
+    }
+    return res
+  },
+  (error) => {
+    // 统一错误处理
+    return Promise.reject(error)
+  }
+)
+```
+
+6.7 类型导出规范
+- 必须导出所有使用的类型：`export type { XXXRecord, ... }`
+- 类型定义统一在 `src/types/` 目录
+- 使用 TypeScript 类型约束，禁止使用 `any`
+
+6.8 Mock 数据支持规范
+- 所有 API 必须支持 Mock 数据
+- Mock 数据定义在 `src/mock/` 目录
+- Mock 数据必须使用规则验证（参考 `src/mock/rules.ts`）
+- Mock 数据必须支持分页参数（列表接口）
+- Mock 延迟统一为 800ms（模拟网络延迟）
+
+6.9 环境变量使用规范
+- 使用 `import.meta.env.VITE_API_BASE_URL` 获取 API 基础路径
+- 默认值为 `/api`
+- 禁止硬编码 URL
+
+5.3 Store 层面
+- 必须提供分页加载方法：`fetchXXXPage(page, pageSize, customerId?)`
+- 必须提供清空方法：`clearXXX()`
+- 第一页重置数据，后续页追加数据：
+```typescript
+const fetchXXXPage = async (page: number = 1, pageSize: number = 5, customerId?: string): Promise<boolean> => {
+  try {
+    const res = await api.getXXXRecords({ customerId, page, pageSize })
+    if (res.code === 200) {
+      if (page === 1) {
+        xxxRecords.value = [...res.data.list] // 第一页重置
+      } else {
+        xxxRecords.value = [...xxxRecords.value, ...res.data.list] // 后续页追加
+      }
+      return res.data.hasMore
+    }
+    return false
+  } catch (error) {
+    console.error('获取失败:', error)
+    return false
+  }
+}
+
+const clearXXX = () => {
+  xxxRecords.value = []
+}
+```
+
+5.4 Mock 数据层面
+- Mock 数据必须支持分页参数解析
+- 必须返回标准格式：`{ list, hasMore, total }`
+- 必须使用规则验证和规范化数据（参考 src/mock/rules.ts）
+- 示例：
+```typescript
+// GET /api/customer/xxx/records
+else if (method === 'get' && fullPath.includes('/customer/xxx/records')) {
+  await delay(800)
+  const params = config.params || {}
+  const page = Number(params.page) || 1
+  const pageSize = Number(params.pageSize) || 5
+  
+  // 所有数据
+  const allRecords = normalizeXXXRecords(mockXXXRecordsRaw)
+  
+  // 分页计算
+  const total = allRecords.length
+  const startIndex = (page - 1) * pageSize
+  const endIndex = startIndex + pageSize
+  const pageRecords = allRecords.slice(startIndex, endIndex)
+  const hasMore = endIndex < total
+  
+  mockResponse = {
+    code: 200,
+    message: 'success',
+    data: { list: pageRecords, hasMore, total }
+  }
+}
+```
+
+5.5 需要实现滚动加载的列表（必须）
+- 交易记录 (transactions)
+- 车辆关联 (vehicles)
+- 资产中心 (assets)
+- 预约信息 (appointments)
+- 商机信息 (opportunities)
+- 保险记录 (insurance records) - 已实现，作为参考示例
+- 操作日志 (operation logs)
+- 其他所有数据列表
+
+5.6 禁止事项
+- 禁止在组件初始化时一次性加载所有数据（除非数据量很小，< 10 条）
+- 禁止使用 `v-for` 直接渲染大量数据而不使用分页
+- 禁止在 `onMounted` 中调用非分页的列表加载方法
+
+7. 开发建议 (Cursor 指令偏好)
 在修改代码前，优先检查 src/types/index.ts 中的类型定义。
 
 新增功能时，请先创建 Mock 数据，确保在浏览器中预览正常。
 
 复杂逻辑请抽取为独立的 Composition API (Hooks)。
+
+新增列表功能时，必须遵循滚动加载规范（第 5 条）和 API 接口定义规范（第 6 条），参考以下实现：
+- 组件实现：src/views/Maintenance.vue（滚动加载示例）
+- API 实现：src/api/customer.ts（API 定义示例）
+- Store 实现：src/stores/customer.ts（状态管理示例）
+- Mock 实现：src/mock/index.ts（Mock 数据示例）
+- 规则验证：src/mock/rules.ts（数据验证示例）

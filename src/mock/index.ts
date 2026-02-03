@@ -3,8 +3,9 @@
  * 不依赖 vite-plugin-mock，直接在 axios 层面拦截请求
  */
 import type { AxiosRequestConfig, AxiosResponse } from 'axios'
-import type { CustomerProfile, TagPool, MobileData, MobileItem, MaintenanceRecord, Appointment, PlatformSource } from '@/types/customer'
+import type { CustomerProfile, TagPool, MobileData, MobileItem, MaintenanceRecord, Appointment, PlatformSource, Opportunity, OperationLog, InsuranceRecord } from '@/types/customer'
 import { mockCustomerProfile, mockTagPool, mockRelationTagPool, mockMaintenanceRecords } from './data'
+import { normalizeInsuranceRecords, validateInsuranceRecords } from './rules'
 
 // 模拟网络延迟
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -57,10 +58,20 @@ export async function mockRequestInterceptor(
     // GET /api/customer/profile
     if (method === 'get' && fullPath.includes('/customer/profile')) {
       await delay(800)
+      // 确保 latestOperation 字段存在
+      const profileWithLatestOperation = {
+        ...mockCustomerProfile,
+        latestOperation: mockCustomerProfile.latestOperation || {
+          operator: 'Rebecca Z.',
+          operationType: '人工更新',
+          operationTime: '2025-01-15 14:30:00',
+        },
+      }
+      console.log('[Mock] profile latestOperation:', profileWithLatestOperation.latestOperation)
       mockResponse = {
         code: 200,
         message: 'success',
-        data: mockCustomerProfile,
+        data: profileWithLatestOperation,
       }
     }
     // GET /api/customer/tags/pool
@@ -89,6 +100,195 @@ export async function mockRequestInterceptor(
         message: 'success',
         data: mockMaintenanceRecords,
       }
+    }
+    // GET /api/customer/insurance/records
+    else if (method === 'get' && fullPath.includes('/customer/insurance/records')) {
+      await delay(800)
+      
+      // 获取分页参数
+      const params = config.params || {}
+      const page = Number(params.page) || 1
+      const pageSize = Number(params.pageSize) || 5
+      
+      // 定义保险记录原始数据（生成更多数据用于分页测试）
+      const allMockInsuranceRecordsRaw: Partial<InsuranceRecord>[] = [
+        {
+          id: 'I001',
+          type: '交强险',
+          amount: 950,
+          status: '已生效',
+          company: '中国人保',
+          policyNo: 'PICC202501150012345',
+          startDate: '2025-01-15',
+          endDate: '2026-01-14',
+          purchaseDate: '2024-12-20',
+          source: 'DMS',
+        },
+        {
+          id: 'I002',
+          type: '商业险',
+          amount: 4850,
+          status: '已生效',
+          company: '中国人保',
+          policyNo: 'PICC202501150012346',
+          startDate: '2025-01-15',
+          endDate: '2026-01-14',
+          purchaseDate: '2024-12-20',
+          source: 'DMS',
+        },
+        {
+          id: 'I003',
+          type: '第三者责任险',
+          amount: 1200,
+          status: '已生效',
+          company: '平安保险',
+          policyNo: 'PAIC202501150056789',
+          startDate: '2025-01-15',
+          endDate: '2026-01-14',
+          purchaseDate: '2024-12-25',
+          source: 'BDC',
+        },
+        {
+          id: 'I004',
+          type: '意外险',
+          amount: 680,
+          status: '已生效',
+          company: '太平洋保险',
+          policyNo: 'CPIC202501150090123',
+          startDate: '2025-01-15',
+          endDate: '2026-01-14',
+          purchaseDate: '2024-12-28',
+          source: 'CRM',
+        },
+        {
+          id: 'I005',
+          type: '交强险',
+          amount: 950,
+          status: '已过期',
+          company: '中国人保',
+          policyNo: 'PICC202401150012344',
+          startDate: '2024-01-15',
+          endDate: '2025-01-14',
+          purchaseDate: '2023-12-20',
+          source: 'DMS',
+        },
+        {
+          id: 'I006',
+          type: '商业险',
+          amount: 5200,
+          status: '待续保',
+          company: '平安保险',
+          policyNo: 'PAIC202406150056788',
+          startDate: '2024-06-15',
+          endDate: '2025-06-14',
+          purchaseDate: '2024-05-25',
+          source: 'BDC',
+        },
+        // 生成更多数据用于分页测试
+        {
+          id: 'I007',
+          type: '交强险',
+          amount: 980,
+          status: '已生效',
+          company: '太平洋保险',
+          policyNo: 'CPIC202502150090124',
+          startDate: '2025-02-15',
+          endDate: '2026-02-14',
+          purchaseDate: '2025-01-20',
+          source: 'CRM',
+        },
+        {
+          id: 'I008',
+          type: '商业险',
+          amount: 5200,
+          status: '已生效',
+          company: '中国人寿',
+          policyNo: 'CLIC202502150012347',
+          startDate: '2025-02-15',
+          endDate: '2026-02-14',
+          purchaseDate: '2025-01-25',
+          source: 'DMS',
+        },
+        {
+          id: 'I009',
+          type: '第三者责任险',
+          amount: 1500,
+          status: '已生效',
+          company: '大地保险',
+          policyNo: 'CCIC202502150056790',
+          startDate: '2025-02-15',
+          endDate: '2026-02-14',
+          purchaseDate: '2025-01-28',
+          source: 'BDC',
+        },
+        {
+          id: 'I010',
+          type: '意外险',
+          amount: 750,
+          status: '已生效',
+          company: '阳光保险',
+          policyNo: 'SUN202502150090125',
+          startDate: '2025-02-15',
+          endDate: '2026-02-14',
+          purchaseDate: '2025-02-10',
+          source: 'CRM',
+        },
+        {
+          id: 'I011',
+          type: '交强险',
+          amount: 960,
+          status: '待续保',
+          company: '中国人保',
+          policyNo: 'PICC202502150012348',
+          startDate: '2025-02-15',
+          endDate: '2026-02-14',
+          purchaseDate: '2025-01-20',
+          source: 'DMS',
+        },
+        {
+          id: 'I012',
+          type: '商业险',
+          amount: 5500,
+          status: '已过期',
+          company: '平安保险',
+          policyNo: 'PAIC202503150056791',
+          startDate: '2024-03-15',
+          endDate: '2025-03-14',
+          purchaseDate: '2024-02-25',
+          source: 'BDC',
+        },
+      ]
+      
+      // 使用规则验证和规范化所有数据
+      let allRecords: InsuranceRecord[]
+      try {
+        allRecords = normalizeInsuranceRecords(allMockInsuranceRecordsRaw)
+        if (!validateInsuranceRecords(allRecords)) {
+          console.error('[Mock] 保险记录数据验证失败，返回空数组')
+          allRecords = []
+        }
+      } catch (error) {
+        console.error('[Mock] 保险记录数据规范化失败:', error)
+        allRecords = []
+      }
+      
+      // 计算分页
+      const total = allRecords.length
+      const startIndex = (page - 1) * pageSize
+      const endIndex = startIndex + pageSize
+      const pageRecords = allRecords.slice(startIndex, endIndex)
+      const hasMore = endIndex < total
+      
+      mockResponse = {
+        code: 200,
+        message: 'success',
+        data: {
+          list: pageRecords,
+          hasMore,
+          total,
+        },
+      }
+      console.log(`[Mock] 保险记录分页返回: 第${page}页, 每页${pageSize}条, 共${total}条, 返回${pageRecords.length}条, 还有更多: ${hasMore}`)
     }
     // PUT /api/customer/maintenance/records/:id/tags
     else if (method === 'put' && fullPath.includes('/customer/maintenance/records/') && fullPath.includes('/tags')) {
@@ -210,7 +410,7 @@ export async function mockRequestInterceptor(
     else if (method === 'post' && fullPath.includes('/customer/mobile/items')) {
       await delay(600)
       const body = config.data as any
-      const { mobile, relationTagId, relationTagName, isPrimary } = body
+      const { mobile, relationTagId, relationTagName, relationTagIds, relationTagNames, businessTags, isPrimary } = body
       if (!mobile || !/^1[3-9]\d{9}$/.test(mobile)) {
         mockResponse = {
           code: 400,
@@ -230,8 +430,9 @@ export async function mockRequestInterceptor(
           id: `mobile${Date.now()}`,
           mobile,
           isPrimary: isPrimary || false,
-          relationTagId,
-          relationTagName,
+          relationTagId: relationTagId || (relationTagIds && relationTagIds.length > 0 ? relationTagIds[0] : undefined),
+          relationTagName: relationTagName || (relationTagNames && relationTagNames.length > 0 ? relationTagNames[0] : undefined),
+          businessTags: businessTags || [],
           updateTime: new Date().toLocaleString('zh-CN'),
         }
         mobileData.items.push(newItem)
@@ -247,7 +448,7 @@ export async function mockRequestInterceptor(
     else if (method === 'put' && fullPath.includes('/customer/mobile/items')) {
       await delay(600)
       const body = config.data as any
-      const { id, mobile, relationTagId, relationTagName, isPrimary } = body
+      const { id, mobile, relationTagId, relationTagName, relationTagIds, relationTagNames, businessTags, isPrimary } = body
       if (!id) {
         mockResponse = {
           code: 400,
@@ -278,8 +479,19 @@ export async function mockRequestInterceptor(
             }
           }
           item.mobile = mobile
-          item.relationTagId = relationTagId
-          item.relationTagName = relationTagName
+          // 关系标签（单选）
+          if (relationTagId !== undefined) {
+            item.relationTagId = relationTagId
+            item.relationTagName = relationTagName
+          } else if (relationTagIds !== undefined && relationTagIds.length > 0) {
+            // 向后兼容
+            item.relationTagId = relationTagIds[0]
+            item.relationTagName = relationTagNames && relationTagNames.length > 0 ? relationTagNames[0] : undefined
+          }
+          // 业务标签（多选）
+          if (businessTags !== undefined) {
+            item.businessTags = businessTags
+          }
           if (isPrimary !== undefined) {
             item.isPrimary = isPrimary
           }
@@ -412,6 +624,38 @@ export async function mockRequestInterceptor(
         data: vehicles,
       }
     }
+    // PUT /api/customer/vehicles/:id/status
+    else if (method === 'put' && fullPath.includes('/customer/vehicles/') && fullPath.includes('/status')) {
+      await delay(800)
+      const vehicleId = fullPath.match(/\/customer\/vehicles\/([^/]+)\/status/)?.[1]
+      const status = (config.data && typeof config.data === 'string' ? JSON.parse(config.data) : config.data)?.status
+      
+      if (vehicleId && status) {
+        // 查找并更新车辆状态
+        const vehicles = mockCustomerProfile.vehicles || []
+        const vehicle = vehicles.find((v: any) => v.id === vehicleId)
+        if (vehicle) {
+          vehicle.status = status
+          mockResponse = {
+            code: 200,
+            message: 'success',
+            data: vehicle,
+          }
+        } else {
+          mockResponse = {
+            code: 404,
+            message: '车辆不存在',
+            data: null,
+          }
+        }
+      } else {
+        mockResponse = {
+          code: 400,
+          message: '参数错误',
+          data: null,
+        }
+      }
+    }
     // GET /api/customer/assets
     else if (method === 'get' && fullPath.includes('/customer/assets')) {
       await delay(800)
@@ -430,24 +674,24 @@ export async function mockRequestInterceptor(
         {
           id: 'A001',
           type: '试驾预约',
-          date: '2024-02-15',
+          date: '2025-02-15',
           time: '14:00',
-          store: '北京朝阳4S店',
+          store: '上海闵行4S店',
           status: '已确认',
-          description: '预约试驾BMW 3系 2024款',
-          vehicleModel: 'BMW 3系 2024款',
-          source: '官网',
+          description: '预约试驾911 2025款',
+          vehicleModel: '911 2025款',
+          source: 'BDC',
         },
         {
           id: 'A002',
           type: '保养预约',
-          date: '2024-02-20',
+          date: '2025-02-20',
           time: '10:00',
-          store: '北京朝阳4S店',
+          store: '上海浦东4S店',
           status: '待确认',
           description: '定期保养服务',
-          vehicleModel: 'BMW 3系 2023款',
-          source: '官网',
+          vehicleModel: '911 2025款',
+          source: 'BDC',
         },
       ]
       mockResponse = {
@@ -465,91 +709,91 @@ export async function mockRequestInterceptor(
           id: 'PS001',
           name: 'DMS',
           type: '每日导出 CSV',
-          mergeTime: '2023-10-01 10:30:00',
+          mergeTime: '2025-10-01 10:30:00',
           keyInfo: {
-            name: '张三',
+            name: '陈明',
             mobile: '13800138000',
             age: 35,
             gender: '男',
-            city: '北京',
+            city: '上海',
           },
         },
         {
           id: 'PS002',
           name: 'POAS',
           type: 'POAS系统',
-          mergeTime: '2023-09-28 14:20:00',
+          mergeTime: '2025-09-28 14:20:00',
           keyInfo: {
-            name: '张三',
+            name: '陈明',
             mobile: '13800138000',
             age: 35,
             gender: '男',
-            city: '北京',
+            city: '上海',
           },
         },
         {
           id: 'PS003',
           name: 'WWS',
           type: 'WWS系统',
-          mergeTime: '2023-09-25 09:15:00',
+          mergeTime: '2025-09-25 09:15:00',
           keyInfo: {
-            name: '张三',
+            name: '陈明',
             mobile: '13800138000',
             age: 35,
             gender: '男',
-            city: '北京',
+            city: '上海',
           },
         },
         {
           id: 'PS004',
           name: 'C@P',
           type: 'C@P系统',
-          mergeTime: '2023-09-22 16:45:00',
+          mergeTime: '2025-09-22 16:45:00',
           keyInfo: {
-            name: '张三',
+            name: '陈明',
             mobile: '13800138000',
             age: 35,
             gender: '男',
-            city: '北京',
+            city: '上海',
           },
         },
         {
           id: 'PS005',
           name: 'BDC',
           type: 'BDC系统',
-          mergeTime: '2023-09-20 11:30:00',
+          mergeTime: '2025-09-20 11:30:00',
           keyInfo: {
-            name: '张三',
+            name: '陈明',
             mobile: '13800138000',
             age: 35,
             gender: '男',
-            city: '北京',
+            city: '上海',
           },
         },
         {
           id: 'PS006',
           name: 'Voucher',
           type: 'Voucher系统',
-          mergeTime: '2023-09-18 13:20:00',
+          mergeTime: '2025-09-18 13:20:00',
           keyInfo: {
-            name: '张三',
+            name: '陈明',
             mobile: '13800138000',
             age: 35,
             gender: '男',
-            city: '北京',
+            city: '上海',
           },
         },
         {
           id: 'PS007',
           name: 'CRM',
           type: 'CRM系统',
-          mergeTime: '2023-09-15 10:00:00',
+          mergeTime: '2025-09-15 10:00:00',
           keyInfo: {
-            name: '张三',
+            name: '陈明',
             mobile: '13800138000',
             age: 35,
             gender: '男',
-            city: '北京',
+            city: '上海',
           },
         },
       ]
@@ -650,6 +894,90 @@ export async function mockRequestInterceptor(
           message: '纠错信息已提交，等待审核',
           data: { success: true },
         }
+      }
+    }
+    // GET /api/customer/opportunities
+    else if (method === 'get' && fullPath.includes('/customer/opportunities')) {
+      await delay(800)
+      const mockOpportunities: Opportunity[] = [
+        {
+          id: 'OPP001',
+          oneId: 'ONE-202501001',
+          type: '首保流失15个月',
+          triggerRule: '首保流失提醒规则',
+          priority: '高',
+          status: '待处理',
+          pushTarget: 'bdc',
+          pushStatus: '待推送',
+          createTime: '2025-01-15 10:30:00',
+          description: '最近保养公里：0\n交付日期：2025/02/02',
+          source: 'CRM',
+        },
+        {
+          id: 'OPP002',
+          oneId: 'ONE-202501002',
+          type: 'PCN售后',
+          triggerRule: 'PCN售后活动规则',
+          priority: '高',
+          status: '处理中',
+          pushTarget: 'bdc',
+          pushStatus: '成功',
+          createTime: '2025-01-14 09:20:00',
+          description: '活动内容：对网关控制单元（蓄电池传感器）重新编程\n活动完成率：30%\n距离目标差值（车）：30\n活动属性：30',
+          source: 'CRM',
+        },
+      ]
+      mockResponse = {
+        code: 200,
+        message: 'success',
+        data: mockOpportunities,
+      }
+    }
+    // GET /api/customer/operation-logs
+    else if (method === 'get' && fullPath.includes('/customer/operation-logs')) {
+      await delay(800)
+      // 只包含人为操作的日志，显示操作人员提交的信息
+      const mockOperationLogs: OperationLog[] = [
+        {
+          id: 'LOG001',
+          operator: 'Rebecca Z.',
+          operationType: '人工更新',
+          operationTime: '2025-01-15 14:30:00',
+          description: '提交了客户基础信息更新：姓名、手机号',
+        },
+        {
+          id: 'LOG002',
+          operator: 'John D.',
+          operationType: '数据纠错',
+          operationTime: '2025-01-12 16:45:00',
+          description: '提交了字段纠错申请：年龄字段',
+        },
+        {
+          id: 'LOG003',
+          operator: 'Alice W.',
+          operationType: '人工更新',
+          operationTime: '2025-01-10 11:20:00',
+          description: '提交了客户标签信息更新',
+        },
+        {
+          id: 'LOG004',
+          operator: 'Bob M.',
+          operationType: '冲突处理',
+          operationTime: '2025-01-08 09:30:00',
+          description: '提交了姓名和手机号冲突处理申请',
+        },
+        {
+          id: 'LOG005',
+          operator: 'Rebecca Z.',
+          operationType: '人工更新',
+          operationTime: '2025-01-05 15:20:00',
+          description: '提交了客户电话号码管理更新',
+        },
+      ]
+      mockResponse = {
+        code: 200,
+        message: 'success',
+        data: mockOperationLogs,
       }
     }
 
