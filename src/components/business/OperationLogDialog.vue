@@ -103,7 +103,7 @@ const getOperationTypeTagType = (type: string): any => {
 
 <style scoped lang="scss">
 .operation-log-dialog {
-  padding: 16px;
+  padding: 12px; // 减少内边距
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -113,19 +113,19 @@ const getOperationTypeTagType = (type: string): any => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 16px;
+    padding-bottom: 10px; // 统一内边距
     border-bottom: 1px solid #ebedf0;
-    margin-bottom: 16px;
+    margin-bottom: 12px; // 统一间距
 
     h3 {
       margin: 0;
-      font-size: 18px;
+      font-size: 14px; // 统一标题字体大小
       font-weight: 600;
       color: #323233;
     }
 
     .van-icon {
-      font-size: 20px;
+      font-size: 16px; // 统一图标大小
       color: #969799;
       cursor: pointer;
     }
@@ -146,66 +146,66 @@ const getOperationTypeTagType = (type: string): any => {
     .logs-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 6px; // 减少间距
 
       .log-item {
         background: white;
-        border-radius: 8px;
-        padding: 16px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border-radius: 6px; // 减小圆角
+        padding: 10px 12px; // 减少内边距
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06); // 减小阴影
 
         .log-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 12px;
+          margin-bottom: 8px; // 减少间距
 
           .log-operator {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px; // 减少间距
 
             .operator-icon {
-              font-size: 16px;
+              font-size: 14px; // 减小图标
               color: #1989fa;
             }
 
             .operator-name {
-              font-size: 15px;
+              font-size: 13px; // 减小字体
               font-weight: 600;
               color: #323233;
             }
           }
 
           .log-time {
-            font-size: 13px;
+            font-size: 11px; // 减小字体
             color: #969799;
           }
         }
 
         .log-type {
-          margin-bottom: 8px;
+          margin-bottom: 6px; // 减少间距
         }
 
         .log-description {
-          font-size: 14px;
+          font-size: 12px; // 减小字体
           color: #646566;
-          line-height: 1.5;
-          margin-bottom: 12px;
+          line-height: 1.4; // 优化行高
+          margin-bottom: 8px; // 减少间距
         }
 
         .log-details {
-          padding: 12px;
+          padding: 8px 10px; // 减少内边距
           background: #f7f8fa;
-          border-radius: 6px;
+          border-radius: 4px; // 减小圆角
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 6px; // 减少间距
 
           .detail-item {
             display: flex;
-            font-size: 13px;
-            line-height: 1.5;
+            font-size: 11px; // 减小字体
+            line-height: 1.3; // 优化行高
 
             .detail-label {
               color: #969799;

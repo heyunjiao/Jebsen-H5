@@ -160,7 +160,7 @@ const getLabel = (key: string): string => {
 
 <style scoped lang="scss">
 .platform-flow {
-  padding: 16px;
+  padding: 12px; // 减少内边距
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -170,19 +170,19 @@ const getLabel = (key: string): string => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 16px;
+  padding-bottom: 10px; // 统一内边距
   border-bottom: 1px solid #ebedf0;
   flex-shrink: 0;
 
   h3 {
     margin: 0;
-    font-size: 18px;
+    font-size: 14px; // 统一标题字体大小
     font-weight: 600;
     color: #323233;
   }
 
   .van-icon {
-    font-size: 20px;
+    font-size: 16px; // 统一图标大小
     color: #969799;
     cursor: pointer;
   }
@@ -191,7 +191,7 @@ const getLabel = (key: string): string => {
 .popup-content {
   flex: 1;
   overflow-y: auto;
-  padding-top: 16px;
+  padding-top: 12px; // 减少内边距
 }
 
 // OneID 区域
@@ -199,9 +199,9 @@ const getLabel = (key: string): string => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
+  gap: 6px; // 减少间距
+  margin-bottom: 12px; // 减少间距
+  padding-bottom: 12px; // 减少内边距
   border-bottom: 1px solid #ebedf0;
 
   .oneid-node {
@@ -319,29 +319,29 @@ const getLabel = (key: string): string => {
 
 // 平台详情（页面内显示）
 .source-detail {
-  margin-top: 20px;
-  padding: 16px;
+  margin-top: 12px; // 减少间距
+  padding: 10px 12px; // 减少内边距
   background: #f7f8fa;
-  border-radius: 12px;
+  border-radius: 6px; // 减小圆角
   border: 1px solid #ebedf0;
 
   .detail-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
+    margin-bottom: 10px; // 减少间距
+    padding-bottom: 8px; // 减少内边距
     border-bottom: 1px solid #ebedf0;
 
     h4 {
       margin: 0;
-      font-size: 16px;
+      font-size: 13px; // 减小字体
       font-weight: 600;
       color: #323233;
     }
 
     .van-icon {
-      font-size: 18px;
+      font-size: 16px; // 减小图标
       color: #969799;
       cursor: pointer;
     }
@@ -350,8 +350,9 @@ const getLabel = (key: string): string => {
   .detail-content {
     .detail-row {
       display: flex;
-      padding: 10px 0;
-      font-size: 14px;
+      padding: 6px 0; // 减少内边距
+      font-size: 12px; // 减小字体
+      line-height: 1.3; // 优化行高
       border-bottom: 1px solid #ebedf0;
 
       &:last-child {
@@ -360,8 +361,9 @@ const getLabel = (key: string): string => {
 
       .detail-label {
         color: #969799;
-        min-width: 90px;
+        min-width: 75px; // 减少最小宽度
         flex-shrink: 0;
+        font-size: 12px; // 减小字体
       }
 
       .detail-value {
@@ -369,21 +371,22 @@ const getLabel = (key: string): string => {
         font-weight: 500;
         flex: 1;
         text-align: right;
+        font-size: 12px; // 减小字体
       }
     }
 
     .detail-divider {
       height: 1px;
       background: #ebedf0;
-      margin: 16px 0;
+      margin: 10px 0; // 减少间距
     }
 
     .detail-section-title {
-      font-size: 15px;
+      font-size: 12px; // 减小字体
       font-weight: 600;
       color: #323233;
-      margin-bottom: 12px;
-      padding-bottom: 8px;
+      margin-bottom: 8px; // 减少间距
+      padding-bottom: 6px; // 减少内边距
       border-bottom: 2px solid #1989fa;
     }
   }

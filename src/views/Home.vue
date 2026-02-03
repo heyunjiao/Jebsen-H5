@@ -58,84 +58,79 @@
                 @click="showPlatformFlow = true"
               />
             </div>
-            <div class="identity-badge">
-              <van-icon 
-                :name="customerTypeIcon" 
-                class="identity-icon"
-                :class="{ 'is-company': isCompany }"
-              />
-              <span class="identity-text">{{ customerTypeText }}</span>
+            <div class="name-row-right">
+              <div class="customer-id">
+                <span class="id-label">客户ID：</span>
+                <span class="id-value">{{ customerStore.profile.id }}</span>
+              </div>
+              <div class="identity-badge">
+                <van-icon 
+                  :name="customerTypeIcon" 
+                  class="identity-icon"
+                  :class="{ 'is-company': isCompany }"
+                />
+                <span class="identity-text">{{ customerTypeText }}</span>
+              </div>
             </div>
-          </div>
-          <div class="customer-id">
-            <span class="id-label">客户ID</span>
-            <span class="id-value">{{ customerStore.profile.id }}</span>
           </div>
         </div>
         
         <div class="card-content-wrapper">
           <!-- 电话部分 -->
           <div class="phone-section">
-            <div class="section-title">电话</div>
-            <div class="phone-list">
-              <div
-                v-for="(item, index) in displayedPhones"
-                :key="item.id"
-                class="phone-item"
-                :class="{ 'is-primary': item.isPrimary }"
-              >
-                <span class="phone-number">{{ item.mobile }}</span>
-                <van-tag v-if="item.isPrimary" type="primary" :size="'small' as any">主号</van-tag>
-                <!-- 业务标签显示（车主、送修人） -->
-                <template v-if="item.businessTags && item.businessTags.length > 0">
-                  <van-tag
-                    v-for="(businessTag, tagIndex) in item.businessTags"
-                    :key="tagIndex"
-                    type="primary"
-                    plain
-                    :size="'small' as any"
-                  >
-                    {{ businessTag }}
-                  </van-tag>
-                </template>
-                <!-- 关系标签显示（向后兼容） -->
-                <template v-if="item.relationTagNames && item.relationTagNames.length > 0">
-                  <van-tag
-                    v-for="(tagName, tagIndex) in item.relationTagNames"
-                    :key="tagIndex"
-                    type="default"
-                    :size="'small' as any"
-                  >
-                    {{ tagName }}
-                  </van-tag>
-                </template>
-                <van-tag v-else-if="item.relationTagName" type="default" :size="'small' as any">{{ item.relationTagName }}</van-tag>
+            <div class="phone-row">
+              <span class="section-title">电话：</span>
+              <div class="phone-list">
+                <div
+                  v-for="(item, index) in displayedPhones"
+                  :key="item.id"
+                  class="phone-item"
+                  :class="{ 'is-primary': item.isPrimary }"
+                >
+                  <span class="phone-number">{{ item.mobile }}</span>
+                  <van-tag v-if="item.isPrimary" type="primary" :size="'small' as any">主号</van-tag>
+                  <!-- 业务标签显示（车主、送修人） -->
+                  <template v-if="item.businessTags && item.businessTags.length > 0">
+                    <van-tag
+                      v-for="(businessTag, tagIndex) in item.businessTags"
+                      :key="tagIndex"
+                      :type="getBusinessTagType(businessTag)"
+                      plain
+                      :size="'small' as any"
+                    >
+                      {{ businessTag }}
+                    </van-tag>
+                  </template>
+                  <!-- 关系标签在首屏不展示 -->
+                </div>
+                <van-button
+                  v-if="hasMorePhones"
+                  type="primary"
+                  size="mini"
+                  plain
+                  @click="showMobileManager = true"
+                  class="more-phone-btn"
+                >
+                  更多
+                </van-button>
               </div>
-              <van-button
-                v-if="hasMorePhones"
-                type="primary"
-                size="mini"
-                plain
-                @click="showMobileManager = true"
-                class="more-phone-btn"
-              >
-                更多
-              </van-button>
             </div>
           </div>
           <!-- 商机信息部分 -->
           <div class="opportunity-section" v-if="opportunityTypeList.length > 0">
-            <div class="section-title">商机信息</div>
-            <div class="opportunity-types" @click="showOpportunityDialog = true">
-              <van-tag
-                v-for="(type, index) in opportunityTypeList"
-                :key="index"
-                :type="getOpportunityTypeTagType(type)"
-                size="medium"
-              
-              >
-                {{ type }}
-              </van-tag>
+            <div class="opportunity-row">
+              <span class="section-title">商机信息：</span>
+              <div class="opportunity-types" @click="showOpportunityDialog = true">
+                <van-tag
+                  v-for="(type, index) in opportunityTypeList"
+                  :key="index"
+                  :type="getOpportunityTypeTagType(type)"
+                  size="medium"
+                
+                >
+                  {{ type }}
+                </van-tag>
+              </div>
             </div>
           </div>
         </div>
@@ -162,7 +157,13 @@
             class="vehicle-item"
           >
             <div class="vehicle-header">
-              <div class="vehicle-model">{{ vehicle.vehicleModel }}</div>
+              <div class="vehicle-main-info">
+                <div class="vehicle-model">{{ vehicle.vehicleModel }}</div>
+                <div class="vehicle-info">
+                  <span class="info-value">{{ vehicle.vin || '未知' }}</span>
+                  <span class="info-value">{{ vehicle.licensePlate || '未知' }}</span>
+                </div>
+              </div>
               <div class="vehicle-status-wrapper" @click="openVehicleStatusSheet(vehicle.id)">
                 <van-tag
                   :type="getVehicleStatusType(vehicle.status)"
@@ -179,16 +180,6 @@
                 @select="(action: any) => handleVehicleStatusChange(vehicle.id, action.value)"
                 cancel-text="取消"
               />
-            </div>
-            <div class="vehicle-info">
-              <div class="info-item">
-                <span class="label">车架号：</span>
-                <span class="value">{{ vehicle.vin || '未知' }}</span>
-              </div>
-              <div class="info-item">
-                <span class="label">车牌号：</span>
-                <span class="value">{{ vehicle.licensePlate || '未知' }}</span>
-              </div>
             </div>
           </div>
         </div>
@@ -680,18 +671,40 @@
           <van-icon name="cross" @click="showTagManager = false" />
         </div>
         <div class="popup-content">
-          <div class="tag-list">
-            <van-tag
-              v-for="tag in customerStore.tagPool"
-              :key="tag.id"
-              :type="isTagSelectedInManager(tag.name) ? 'primary' : 'default'"
-              size="medium"
-              class="tag-item"
-              :class="{ 'is-selected': isTagSelectedInManager(tag.name) }"
-              @click="toggleTag(tag.name)"
-            >
-              {{ tag.name }}
-            </van-tag>
+          <!-- 已选标签区域 -->
+          <div v-if="selectedTagsInManager.length > 0" class="tag-section">
+            <div class="tag-section-title">已选标签</div>
+            <div class="tag-list selected-tags">
+              <van-tag
+                v-for="tagName in selectedTagsInManager"
+                :key="tagName"
+                type="primary"
+                size="medium"
+                class="tag-item is-selected"
+                @click="toggleTag(tagName)"
+              >
+                {{ tagName }}
+              </van-tag>
+            </div>
+          </div>
+          
+          <!-- 未选标签区域 -->
+          <div class="tag-section">
+            <div class="tag-section-title">
+              {{ selectedTagsInManager.length > 0 ? '未选标签' : '选择标签' }}
+            </div>
+            <div class="tag-list unselected-tags">
+              <van-tag
+                v-for="tag in unselectedTagsInManager"
+                :key="tag.id"
+                type="default"
+                size="medium"
+                class="tag-item"
+                @click="toggleTag(tag.name)"
+              >
+                {{ tag.name }}
+              </van-tag>
+            </div>
           </div>
         </div>
         <div class="popup-footer">
@@ -1005,23 +1018,42 @@ const isTagSelected = (tagName: string) => {
   return customerStore.profile?.tags.includes(tagName) || false
 }
 
-// 获取标签类型（用于颜色 - 大厂风格：统一使用 default 和 primary）
+// 获取标签类型（用于颜色标识）
 const getTagType = (tagName: string): any => {
   const tag = customerStore.tagPool.find((t) => t.name === tagName)
   if (!tag) return 'default'
   
-  // 根据标签名称映射类型（简化色彩，主要使用 default 和 primary）
+  // 根据标签名称映射类型（使用不同颜色做标识）
   const typeMap: Record<string, any> = {
     '战败客户': 'default',
-    '高意向': 'primary',
-    '置换需求': 'primary',
+    '高意向': 'success',
+    '置换需求': 'warning',
     '首购客户': 'primary',
-    'VIP客户': 'primary',
+    'VIP客户': 'danger',
     '潜在客户': 'default',
-    '已成交': 'primary',
+    '已成交': 'success',
     '流失客户': 'default',
   }
   
+  return typeMap[tagName] || 'default'
+}
+
+// 获取业务标签类型（车主、送修人等）
+const getBusinessTagType = (tagName: string): any => {
+  const typeMap: Record<string, any> = {
+    '车主': 'success',
+    '送修人': 'primary',
+  }
+  return typeMap[tagName] || 'primary'
+}
+
+// 获取关系标签类型
+const getRelationTagType = (tagName: string): any => {
+  const typeMap: Record<string, any> = {
+    '车主': 'success',
+    '送修人': 'primary',
+    '联系人': 'default',
+  }
   return typeMap[tagName] || 'default'
 }
 
@@ -1064,6 +1096,16 @@ watch(
   { immediate: true }
 )
 
+// 当打开标签管理弹窗时，同步标签数据
+watch(
+  () => showTagManager.value,
+  (isOpen) => {
+    if (isOpen && customerStore.profile?.tags) {
+      selectedTags.value = [...customerStore.profile.tags]
+    }
+  }
+)
+
 // 切换标签选中状态
 const toggleTag = (tagName: string) => {
   const index = selectedTags.value.indexOf(tagName)
@@ -1078,6 +1120,16 @@ const toggleTag = (tagName: string) => {
 const isTagSelectedInManager = (tagName: string) => {
   return selectedTags.value.includes(tagName)
 }
+
+// 已选标签列表（用于标签管理弹窗）
+const selectedTagsInManager = computed(() => {
+  return selectedTags.value
+})
+
+// 未选标签列表（用于标签管理弹窗）
+const unselectedTagsInManager = computed(() => {
+  return customerStore.tagPool.filter(tag => !selectedTags.value.includes(tag.name))
+})
 
 // 保存标签
 const handleSaveTags = async () => {
@@ -1140,12 +1192,12 @@ const getTransactionStatusType = (status: string): any => {
   return typeMap[status] || 'default'
 }
 
-// 获取车辆状态类型（大厂风格：统一使用 default 和 primary）
+// 获取车辆状态类型（使用颜色标识）
 const getVehicleStatusType = (status: string): any => {
   const typeMap: Record<string, any> = {
     '已售': 'default',
-    '自用': 'primary',
-    '维修中': 'default',
+    '自用': 'success',
+    '维修中': 'warning',
   }
   return typeMap[status] || 'default'
 }
@@ -1236,14 +1288,14 @@ const getAppointmentStatusType = (status: string): any => {
   return typeMap[status] || 'default'
 }
 
-// 获取商机类型标签类型（大厂风格：统一使用 default 和 primary）
+// 获取商机类型标签类型（使用颜色标识）
 const getOpportunityTypeTagType = (type: string): any => {
   const typeMap: Record<string, any> = {
-    '维保到期': 'primary',
-    '代金券到期': 'primary',
-    '高价值客户': 'primary',
-    '流失预警': 'primary',
-    '复购机会': 'primary',
+    '维保到期': 'warning',
+    '代金券到期': 'warning',
+    '高价值客户': 'danger',
+    '流失预警': 'danger',
+    '复购机会': 'success',
     '升级机会': 'primary',
   }
   return typeMap[type] || 'primary'
@@ -1528,10 +1580,10 @@ onMounted(async () => {
 .home-container {
   min-height: 100vh;
   background: #f7f8fa;
-  padding: 8px;
+  padding: 4px; // 减少容器内边距
   max-width: 100%;
   box-sizing: border-box;
-  padding-bottom: 20px; // 确保底部有足够空间
+  padding-bottom: 12px; // 减少底部空间
   overflow-y: auto; // 允许滚动
 }
 
@@ -1539,16 +1591,16 @@ onMounted(async () => {
 .first-screen {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: 3px; // 减少间距，更紧凑
+  margin-bottom: 4px;
 }
 
 // 姓名卡片（名片样式优化 - 大厂风格）
 .info-card.name-card {
   background: #ffffff !important;
-  border-radius: 12px;
+  border-radius: 8px; // 减小圆角
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06); // 减小阴影
   border: 1px solid #ebedf0;
   position: relative;
   
@@ -1564,8 +1616,8 @@ onMounted(async () => {
   }
   
   .name-section {
-    padding: 16px 18px;
-    padding-bottom: 12px;
+    padding: 8px 12px; // 减少内边距
+    padding-bottom: 8px;
     position: relative;
     
     // 分隔线，从蓝色装饰条右边开始
@@ -1583,28 +1635,32 @@ onMounted(async () => {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 8px;
+      gap: 8px;
+      flex-wrap: nowrap;
       
       .name-with-icon {
         display: flex;
         align-items: center;
         gap: 8px;
+        flex-shrink: 0;
         
         .name-text {
-          font-size: 24px;
+          font-size: 20px; // 稍微减小字体
           font-weight: 600;
           color: #1a1a1a;
           letter-spacing: 0.2px;
-          line-height: 1.3;
+          line-height: 1.2;
+          white-space: nowrap;
         }
         
         .source-icon {
-          font-size: 18px;
+          font-size: 16px; // 减小图标
           color: var(--van-tag-primary-color);
           cursor: pointer;
           transition: all 0.2s;
-          padding: 4px;
+          padding: 3px; // 减少内边距
           border-radius: 50%;
+          flex-shrink: 0;
           
           &:hover {
             background: #e8f4ff;
@@ -1617,122 +1673,170 @@ onMounted(async () => {
         }
       }
       
-      .identity-badge {
-        display: inline-flex;
+      .name-row-right {
+        display: flex;
         align-items: center;
-        gap: 5px;
-        padding: 5px 12px;
-        background: #f0f7ff;
-        border-radius: 16px;
-        border: none;
+        gap: 8px;
+        flex-shrink: 0;
+        flex-wrap: nowrap;
+      }
+      
+      .customer-id {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
         
-        .identity-icon {
-          font-size: 14px;
-          color: var(--van-tag-primary-color);
-          
-          &.is-company {
-            color: var(--van-tag-primary-color);
-          }
-        }
-        
-        .identity-text {
+        .id-label {
           font-size: 12px;
-          color: var(--van-tag-primary-color);
-          font-weight: 500;
+          color: #969799;
+          font-weight: 400;
           letter-spacing: 0.2px;
         }
-      }
-    }
-    
-    .customer-id {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 6px;
-      
-      .id-label {
-        font-size: 12px;
-        color: #969799;
-        font-weight: 400;
-        letter-spacing: 0.2px;
+        
+        .id-value {
+          font-size: 11px; // 减小字体
+          color: #646566;
+          font-weight: 500;
+          font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+          letter-spacing: 0.3px; // 减少字间距
+          padding: 2px 5px; // 减少内边距
+          background: #f7f8fa;
+          border-radius: 3px; // 减小圆角
+        }
       }
       
-      .id-value {
-        font-size: 12px;
-        color: #646566;
-        font-weight: 500;
-        font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
-        letter-spacing: 0.5px;
-        padding: 2px 8px;
-        background: #f7f8fa;
-        border-radius: 4px;
-      }
+        .identity-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px; // 减少间距
+          padding: 4px 10px; // 减少内边距
+          background: #f0f7ff;
+          border-radius: 12px; // 减小圆角
+          border: none;
+          flex-shrink: 0;
+          white-space: nowrap;
+          
+          .identity-icon {
+            font-size: 12px; // 减小图标
+            color: var(--van-tag-primary-color);
+            
+            &.is-company {
+              color: var(--van-tag-primary-color);
+            }
+          }
+          
+          .identity-text {
+            font-size: 11px; // 减小字体
+            color: var(--van-tag-primary-color);
+            font-weight: 500;
+            letter-spacing: 0.2px;
+          }
+        }
     }
   }
   
   .card-content-wrapper {
-    padding: 12px 18px;
+    padding: 8px 12px; // 减少内边距
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px; // 减少间距
     
     .phone-section {
-      .section-title {
-        font-size: 13px;
-        font-weight: 600;
-        color: #323233;
-        margin-bottom: 8px;
+      .phone-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: nowrap;
+        
+        .section-title {
+          font-size: 11px; // 使用弱化样式，类似客户ID
+          font-weight: 400; // 弱化字重
+          color: #969799; // 弱化颜色，类似客户ID标签
+          flex-shrink: 0;
+          white-space: nowrap;
+          letter-spacing: 0.2px; // 与客户ID保持一致
+        }
       }
       
       .phone-list {
         display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
+        flex-wrap: nowrap;
+        gap: 4px;
         align-items: center;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        flex: 1;
+        min-width: 0;
+        
+        &::-webkit-scrollbar {
+          display: none;
+        }
         
         .phone-item {
           display: flex;
           align-items: center;
-          gap: 4px;
-          padding: 4px 8px;
+          gap: 4px; // 增加间距，让号码更突出
+          padding: 4px 8px; // 增加内边距，让号码更突出
           background: #f7f8fa;
-          border-radius: 5px;
+          border-radius: 4px; // 稍微增加圆角
           border: 1px solid #ebedf0;
+          white-space: nowrap;
+          flex-shrink: 0;
           
-          &.is-primary {
-            background: #f0f7ff;
-            border: 1px solid var(--van-tag-primary-color);
-          }
+          
           
           .phone-number {
-            font-size: 12px;
-            font-weight: 500;
-            color: #323233;
+            font-size: 14px; // 增大字体，突出重要信息
+            font-weight: 700; // 加粗，突出重要信息
+            color: #1a1a1a; // 使用更深的颜色，增强对比度
+            white-space: nowrap;
+            line-height: 1.4;
+            letter-spacing: 0.3px; // 增加字间距，提升可读性
           }
         }
         
         .more-phone-btn {
-          margin-left: auto;
+          flex-shrink: 0;
         }
       }
     }
     
     .opportunity-section {
-      .section-title {
-        font-size: 13px;
-        font-weight: 600;
-        color: #323233;
-        margin-bottom: 8px;
+      .opportunity-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: nowrap;
+        
+        .section-title {
+          font-size: 11px; // 使用弱化样式，类似客户ID
+          font-weight: 400; // 弱化字重
+          color: #969799; // 弱化颜色，类似客户ID标签
+          flex-shrink: 0;
+          white-space: nowrap;
+          letter-spacing: 0.2px; // 与客户ID保持一致
+        }
       }
       
       .opportunity-types {
         display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
+        flex-wrap: nowrap;
+        gap: 4px;
         cursor: pointer;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        flex: 1;
+        min-width: 0;
+        
+        &::-webkit-scrollbar {
+          display: none;
+        }
         
         .opportunity-tag {
           cursor: pointer;
+          flex-shrink: 0;
+          white-space: nowrap;
         }
       }
     }
@@ -1753,42 +1857,47 @@ onMounted(async () => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 12px;
+    padding: 5px 10px; // 减少内边距
     border-bottom: 1px solid #ebedf0;
     
     .coupon-title {
-      font-size: 14px;
+      font-size: 12px; // 减小字体
       font-weight: 600;
       color: #323233;
     }
     
     .arrow-icon {
-      font-size: 14px;
+      font-size: 12px;
       color: #969799;
     }
   }
   
   .coupon-info {
-    padding: 10px 12px;
+    padding: 6px 10px; // 减少内边距
+    display: flex;
+    gap: 10px; // 减少间距
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    
+    &::-webkit-scrollbar {
+      display: none;
+    }
     
     .coupon-row {
       display: flex;
-      margin-bottom: 6px;
-      font-size: 13px;
-      
-      &:last-child {
-        margin-bottom: 0;
-      }
+      font-size: 11px; // 减小字体
+      white-space: nowrap;
+      flex-shrink: 0;
+      line-height: 1.3; // 优化行高
       
       .label {
         color: #969799;
-        min-width: 65px;
-        flex-shrink: 0;
+        margin-right: 3px;
       }
       
       .value {
         color: #323233;
-        flex: 1;
         
         &.amount {
           color: #323233;
@@ -1802,17 +1911,17 @@ onMounted(async () => {
 // 车辆卡片
 .vehicle-card {
   .card-header {
-    padding: 10px 12px;
+    padding: 5px 10px; // 减少内边距
   }
   
   .vehicle-list {
-    padding: 10px 12px;
+    padding: 6px 10px; // 减少内边距
     
     .vehicle-item {
-      padding: 10px;
+      padding: 6px 8px; // 减少内边距
       background: #f7f8fa;
-      border-radius: 6px;
-      margin-bottom: 8px;
+      border-radius: 4px;
+      margin-bottom: 4px; // 减少间距
       
       &:last-child {
         margin-bottom: 0;
@@ -1822,22 +1931,61 @@ onMounted(async () => {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 8px;
+        gap: 8px;
+        flex-wrap: nowrap;
         
-        .vehicle-model {
-          font-size: 14px;
-          font-weight: 600;
-          color: #323233;
+        .vehicle-main-info {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex: 1;
+          min-width: 0;
+          flex-wrap: nowrap;
+          overflow: hidden;
+          
+          .vehicle-model {
+            font-size: 12px; // 减小字体
+            font-weight: 600;
+            color: #323233;
+            flex-shrink: 0;
+            white-space: nowrap;
+            line-height: 1.3;
+          }
+          
+          .vehicle-info {
+            display: flex;
+            flex-direction: row;
+            gap: 6px; // 减少间距
+            flex-wrap: nowrap;
+            align-items: center;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            flex: 1;
+            min-width: 0;
+            
+            &::-webkit-scrollbar {
+              display: none;
+            }
+            
+            .info-value {
+              font-size: 11px; // 减小字体
+              color: #646566;
+              line-height: 1.3; // 优化行高
+              white-space: nowrap;
+              flex-shrink: 0;
+            }
+          }
         }
         
         .vehicle-status-wrapper {
           display: flex;
           align-items: center;
-          gap: 3px;
+          gap: 2px; // 减少间距
           cursor: pointer;
-          padding: 3px 6px;
-          border-radius: 4px;
+          padding: 2px 5px; // 减少内边距
+          border-radius: 3px; // 减小圆角
           transition: background-color 0.2s;
+          flex-shrink: 0;
           
           &:hover {
             background-color: #ebedf0;
@@ -1852,36 +2000,13 @@ onMounted(async () => {
           }
           
           .status-arrow-icon {
-            font-size: 11px;
+            font-size: 10px; // 减小图标
             color: #969799;
             transition: transform 0.2s;
           }
           
           &:active .status-arrow-icon {
             transform: rotate(180deg);
-          }
-        }
-      }
-      
-      .vehicle-info {
-        .info-item {
-          display: flex;
-          margin-bottom: 4px;
-          font-size: 12px;
-          
-          &:last-child {
-            margin-bottom: 0;
-          }
-          
-          .label {
-            color: #969799;
-            min-width: 60px;
-            flex-shrink: 0;
-          }
-          
-          .value {
-            color: #323233;
-            flex: 1;
           }
         }
       }
@@ -1892,20 +2017,28 @@ onMounted(async () => {
 // 标签卡片
 .tags-card {
   .card-header {
-    padding: 10px 12px;
+    padding: 5px 10px; // 减少内边距
   }
   
   .tags-content {
-    padding: 10px 12px;
+    padding: 6px 10px; // 减少内边距
     
     .tags-list {
       display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
+      flex-wrap: nowrap;
+      gap: 3px; // 减少间距
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      
+      &::-webkit-scrollbar {
+        display: none;
+      }
       
       .clickable-tag {
         cursor: pointer;
         transition: all 0.2s;
+        flex-shrink: 0;
+        white-space: nowrap;
         
         &:active {
           transform: scale(0.95);
@@ -1915,7 +2048,8 @@ onMounted(async () => {
     
     .empty-tags {
       color: #969799;
-      font-size: 12px;
+      font-size: 11px; // 减小字体
+      padding: 2px 0;
     }
   }
 }
@@ -1935,23 +2069,23 @@ onMounted(async () => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 16px;
+    padding-bottom: 10px; // 减少内边距
     border-bottom: 1px solid #ebedf0;
     margin-bottom: 0;
     flex-shrink: 0;
     
     h3 {
       margin: 0;
-      font-size: 18px;
+      font-size: 14px; // 统一标题字体大小
       font-weight: 600;
       color: #323233;
     }
     
     .van-icon {
-      font-size: 20px;
+      font-size: 16px; // 统一图标大小
       color: #969799;
       cursor: pointer;
-      padding: 4px;
+      padding: 3px; // 减少内边距
       
       &:active {
         opacity: 0.7;
@@ -1962,14 +2096,14 @@ onMounted(async () => {
   .popup-content {
     flex: 1;
     overflow-y: auto;
-    padding-top: 16px;
+    padding-top: 12px; // 减少内边距
     min-height: 0; // 确保可以滚动
   }
   
   .popup-footer {
     display: flex;
-    gap: 12px;
-    padding-top: 16px;
+    gap: 10px; // 减少间距
+    padding-top: 12px; // 减少内边距
     border-top: 1px solid #ebedf0;
     flex-shrink: 0;
     margin-top: auto;
@@ -1981,10 +2115,10 @@ onMounted(async () => {
   
   .opportunity-item {
     background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    padding: 16px;
-    margin-bottom: 12px;
+    border-radius: 6px; // 减小圆角
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06); // 减小阴影
+    padding: 10px 12px; // 减少内边距
+    margin-bottom: 6px; // 减少间距
     
     &:last-child {
       margin-bottom: 0;
@@ -1994,9 +2128,9 @@ onMounted(async () => {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 8px; // 减少间距
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px; // 减少间距
       
       .opportunity-type-wrapper {
         display: flex;
@@ -2027,9 +2161,10 @@ onMounted(async () => {
       .info-row {
         display: flex;
         align-items: center;
-        margin-bottom: 8px;
-        font-size: 14px;
-        min-height: 24px;
+        margin-bottom: 6px; // 减少间距
+        font-size: 12px; // 减小字体
+        min-height: 20px; // 减小最小高度
+        line-height: 1.3; // 优化行高
         
         &:last-child {
           margin-bottom: 0;
@@ -2037,14 +2172,16 @@ onMounted(async () => {
         
         .label {
           color: #969799;
-          min-width: 80px;
+          min-width: 70px; // 减少最小宽度
           flex-shrink: 0;
+          font-size: 12px; // 减小字体
         }
         
         .value {
           color: #323233;
           flex: 1;
           word-break: break-all;
+          font-size: 12px; // 减小字体
         }
         
         .priority-tag {
@@ -2056,35 +2193,36 @@ onMounted(async () => {
   
   .asset-item {
     background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    margin-bottom: 12px;
+    border-radius: 6px; // 减小圆角
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06); // 减小阴影
+    margin-bottom: 6px; // 减少间距
     
     &:last-child {
       margin-bottom: 0;
     }
     
     .card-header {
-      padding: 16px;
+      padding: 8px 12px; // 减少内边距
       border-bottom: 1px solid #ebedf0;
       display: flex;
       justify-content: space-between;
       align-items: center;
       
       .record-title {
-        font-size: 16px;
+        font-size: 13px; // 减小字体
         font-weight: 600;
         color: #323233;
       }
     }
     
     .card-content {
-      padding: 16px;
+      padding: 8px 12px; // 减少内边距
       
       .info-row {
         display: flex;
-        margin-bottom: 12px;
-        font-size: 14px;
+        margin-bottom: 6px; // 减少间距
+        font-size: 12px; // 减小字体
+        line-height: 1.3; // 优化行高
         
         &:last-child {
           margin-bottom: 0;
@@ -2092,19 +2230,21 @@ onMounted(async () => {
         
         .label {
           color: #969799;
-          min-width: 80px;
+          min-width: 70px; // 减少最小宽度
           flex-shrink: 0;
+          font-size: 12px; // 减小字体
         }
         
         .value {
           color: #323233;
           flex: 1;
           word-break: break-all;
+          font-size: 12px; // 减小字体
           
           &.amount {
             color: #ee0a24;
             font-weight: 600;
-            font-size: 16px;
+            font-size: 13px; // 减小字体
           }
         }
       }
@@ -2113,10 +2253,10 @@ onMounted(async () => {
   
   .vehicle-item-full {
     background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    padding: 16px;
-    margin-bottom: 12px;
+    border-radius: 6px; // 减小圆角
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06); // 减小阴影
+    padding: 10px 12px; // 减少内边距
+    margin-bottom: 6px; // 减少间距
     
     &:last-child {
       margin-bottom: 0;
@@ -2126,10 +2266,10 @@ onMounted(async () => {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 8px; // 减少间距
       
       .vehicle-model {
-        font-size: 16px;
+        font-size: 13px; // 减小字体
         font-weight: 600;
         color: #323233;
       }
@@ -2170,8 +2310,9 @@ onMounted(async () => {
     .vehicle-info {
       .info-item {
         display: flex;
-        margin-bottom: 8px;
-        font-size: 14px;
+        margin-bottom: 6px; // 减少间距
+        font-size: 12px; // 减小字体
+        line-height: 1.3; // 优化行高
         
         &:last-child {
           margin-bottom: 0;
@@ -2179,13 +2320,15 @@ onMounted(async () => {
         
         .label {
           color: #969799;
-          min-width: 80px;
+          min-width: 70px; // 减少最小宽度
           flex-shrink: 0;
+          font-size: 12px; // 减小字体
         }
         
         .value {
           color: #323233;
           flex: 1;
+          font-size: 12px; // 减小字体
         }
       }
     }
@@ -2193,26 +2336,60 @@ onMounted(async () => {
   
   // 标签管理弹窗特殊样式
   &.tag-manager {
-    .tag-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      padding: 8px 0;
-    }
-    
-    .tag-item {
-      cursor: pointer;
-      transition: all 0.2s;
-      user-select: none;
+    .tag-section {
+      margin-bottom: 12px; // 减少间距
       
-      &:active {
-        transform: scale(0.95);
-        opacity: 0.8;
+      &:last-child {
+        margin-bottom: 0;
       }
       
-      &.is-selected {
-        // 选中状态已经有 primary 类型的样式，这里可以添加额外效果
-        box-shadow: 0 2px 4px rgba(25, 137, 250, 0.2);
+      .tag-section-title {
+        font-size: 12px; // 减小字体
+        font-weight: 600;
+        color: #646566;
+        margin-bottom: 8px; // 减少间距
+        padding-bottom: 6px; // 减少内边距
+        border-bottom: 1px solid #ebedf0;
+      }
+      
+      .tag-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px; // 减少间距
+        padding: 6px 0; // 减少内边距
+        
+        &.selected-tags {
+          min-height: 32px; // 减小最小高度
+          padding: 8px 10px; // 减少内边距
+          background: #f7f8fa;
+          border-radius: 6px; // 减小圆角
+          border: 1px dashed #ebedf0;
+        }
+        
+        &.unselected-tags {
+          min-height: 32px; // 减小最小高度
+        }
+      }
+      
+      .tag-item {
+        cursor: pointer;
+        transition: all 0.2s;
+        user-select: none;
+        
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        &:active {
+          transform: scale(0.95);
+          opacity: 0.8;
+        }
+        
+        &.is-selected {
+          // 选中状态已经有 primary 类型的样式，这里可以添加额外效果
+          box-shadow: 0 2px 4px rgba(25, 137, 250, 0.2);
+        }
       }
     }
   }
@@ -2225,8 +2402,35 @@ onMounted(async () => {
 }
 
 .main-tabs {
+  // 优化 tab 样式，使其更紧凑
+  margin-top: 4px; // 减少顶部间距
+  
+  :deep(.van-tabs__wrap) {
+    padding: 0 2px; // 进一步减少左右内边距
+    height: auto !important; // 允许高度自适应
+  }
+  
+  :deep(.van-tabs__nav) {
+    padding: 0; // 移除导航栏内边距
+  }
+  
+  :deep(.van-tab) {
+    font-size: 12px !important; // 进一步减小字体
+    padding: 6px 10px !important; // 进一步减少内边距
+    line-height: 1.2 !important;
+    min-height: 32px !important; // 进一步减小最小高度
+    height: 32px !important; // 固定高度
+    flex: 0 0 auto !important; // 不自动扩展
+  }
+  
+  :deep(.van-tabs__line) {
+    height: 2px; // 减小指示线高度
+    bottom: 0; // 指示线位置
+  }
+  
   :deep(.van-tabs__content) {
-    padding-bottom: 20px; // 确保内容底部有足够空间
+    padding-bottom: 8px; // 进一步减少底部空间
+    padding-top: 4px; // 减少顶部空间
   }
 }
 
@@ -2344,24 +2548,52 @@ onMounted(async () => {
 }
 
 .conflict-alert-top {
-  margin-bottom: 4px;
-  border-radius: 6px;
-  overflow: hidden;
+  margin-bottom: 2px; // 减少间距
+  border-radius: 2px;
+  overflow: visible;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 
   :deep(.van-notice-bar) {
-    padding: 6px 10px;
+    padding: 2px 8px !important; // 减少内边距
     transition: opacity 0.2s;
-    font-size: 12px;
-    line-height: 1.4;
-    background: #fff7e6;
-    color: #d46b08;
-    border: 1px solid #ffe7ba;
-    min-height: auto;
+    font-size: 11px !important; // 减小字体
+    line-height: 1.2 !important; // 优化行高
+    // background: #fff7e6 !important;
+    color: #d46b08 !important;
+    // border: 1px solid #ffe7ba;
+    min-height: auto !important;
+    height: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    overflow: visible !important;
+
+    * {
+      color: #d46b08 !important;
+    }
+
+    .van-notice-bar__wrap {
+      display: flex !important;
+      align-items: center !important;
+      flex: 1;
+      overflow: visible !important;
+    }
 
     .van-notice-bar__left-icon {
-      font-size: 14px;
-      margin-right: 6px;
+      font-size: 11px !important;
+      margin-right: 3px !important;
+      color: #d46b08 !important;
+      display: inline-block !important;
+      visibility: visible !important;
+    }
+
+    .van-notice-bar__content {
+      line-height: 1.3 !important;
+      color: #d46b08 !important;
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      height: auto !important;
+      min-height: auto !important;
     }
 
     &:active {
@@ -2398,24 +2630,52 @@ onMounted(async () => {
 }
 
 .operation-alert {
-  margin-bottom: 4px;
-  border-radius: 6px;
-  overflow: hidden;
+  margin-bottom: 2px;
+  border-radius: 2px;
+  overflow: visible;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 
   :deep(.van-notice-bar) {
-    padding: 6px 10px;
+    padding: 2px 8px !important; // 减少内边距
     transition: opacity 0.2s;
-    font-size: 12px;
-    line-height: 1.4;
-    background: #e6f7ff;
-    color: var(--van-tag-primary-color);
-    border: 1px solid #91d5ff;
-    min-height: auto;
+    font-size: 11px !important; // 减小字体
+    line-height: 1.2 !important; // 优化行高
+    // background: #e6f7ff !important;
+    color: var(--van-tag-primary-color) !important;
+    // border: 1px solid #91d5ff;
+    min-height: auto !important;
+    height: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    overflow: visible !important;
+
+    * {
+      color: var(--van-tag-primary-color) !important;
+    }
+
+    .van-notice-bar__wrap {
+      display: flex !important;
+      align-items: center !important;
+      flex: 1;
+      overflow: visible !important;
+    }
 
     .van-notice-bar__left-icon {
-      font-size: 14px;
-      margin-right: 6px;
+      font-size: 11px !important;
+      margin-right: 3px !important;
+      color: var(--van-tag-primary-color) !important;
+      display: inline-block !important;
+      visibility: visible !important;
+    }
+
+    .van-notice-bar__content {
+      line-height: 1.3 !important;
+      color: var(--van-tag-primary-color) !important;
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      height: auto !important;
+      min-height: auto !important;
     }
 
     &:active {
@@ -2518,9 +2778,9 @@ onMounted(async () => {
 
 .info-card {
   background: white;
-  border-radius: 10px;
+  border-radius: 8px; // 减小圆角，更紧凑
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06); // 减小阴影
   margin-top: 0;
   
   // 排除名片卡片，名片卡片使用特殊样式
@@ -2540,7 +2800,7 @@ onMounted(async () => {
   }
 
   .card-header {
-    padding: 10px 12px;
+    padding: 5px 10px; // 减少内边距
     border-bottom: 1px solid #ebedf0;
     display: flex;
     justify-content: space-between;
@@ -2548,7 +2808,7 @@ onMounted(async () => {
   }
 
   .card-title {
-    font-size: 14px;
+    font-size: 12px; // 减小字体
     font-weight: 600;
     color: #323233;
   }
@@ -2556,19 +2816,33 @@ onMounted(async () => {
   .card-content {
     padding: 0;
     
-    // 基本信息卡片样式优化
+    // 基本信息卡片样式优化 - 两列布局
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    
     :deep(.van-cell) {
-      padding: 8px 12px;
-      font-size: 13px;
+      padding: 5px 10px; // 减少内边距
+      font-size: 11px; // 减小字体
+      border-bottom: 1px solid #f7f8fa;
+      border-right: 1px solid #f7f8fa;
+      line-height: 1.3; // 优化行高
+      
+      &:nth-child(2n) {
+        border-right: none;
+      }
+      
+      &:nth-last-child(-n+2) {
+        border-bottom: none;
+      }
       
       .van-cell__title {
-        font-size: 13px;
+        font-size: 11px; // 减小字体
         color: #969799;
-        min-width: 70px;
+        min-width: auto;
       }
       
       .van-cell__value {
-        font-size: 13px;
+        font-size: 11px; // 减小字体
         color: #323233;
       }
     }
@@ -2576,7 +2850,7 @@ onMounted(async () => {
 }
 
 .basic-info-editor {
-  padding: 16px;
+  padding: 12px; // 统一内边距
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -2586,19 +2860,19 @@ onMounted(async () => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 16px;
+    padding-bottom: 10px; // 减少内边距
     border-bottom: 1px solid #ebedf0;
-    margin-bottom: 16px;
+    margin-bottom: 12px; // 减少间距
 
     h3 {
       margin: 0;
-      font-size: 18px;
+      font-size: 14px; // 统一标题字体大小
       font-weight: 600;
       color: #323233;
     }
 
     .van-icon {
-      font-size: 20px;
+      font-size: 16px; // 统一图标大小
       color: #969799;
       cursor: pointer;
     }
@@ -2607,13 +2881,14 @@ onMounted(async () => {
   .popup-content {
     flex: 1;
     overflow-y: auto;
+    padding-top: 12px; // 减少内边距
   }
 
   .edit-actions {
     display: flex;
-    gap: 12px;
-    margin-top: 24px;
-    padding-top: 16px;
+    gap: 10px; // 减少间距
+    margin-top: 16px; // 减少间距
+    padding-top: 12px; // 减少内边距
     border-top: 1px solid #ebedf0;
 
     .van-button {
@@ -2849,18 +3124,18 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 16px;
+  padding-bottom: 10px; // 减少内边距
   border-bottom: 1px solid #ebedf0;
 
   h3 {
     margin: 0;
-    font-size: 18px;
+    font-size: 14px; // 统一标题字体大小
     font-weight: 600;
     color: #323233;
   }
 
   .van-icon {
-    font-size: 20px;
+    font-size: 16px; // 统一图标大小
     color: #969799;
     cursor: pointer;
   }
@@ -2960,22 +3235,22 @@ onMounted(async () => {
 
   .conflict-alert-top {
     :deep(.van-notice-bar) {
-      padding: 10px 12px;
-      font-size: 13px;
+      padding: 3px 10px;
+      font-size: 12px;
     }
   }
 
   .multi-source-alert {
     :deep(.van-notice-bar) {
-      padding: 10px 12px;
-      font-size: 13px;
+      padding: 3px 10px;
+      font-size: 12px;
     }
   }
 
   .operation-alert {
     :deep(.van-notice-bar) {
-      padding: 10px 12px;
-      font-size: 13px;
+      padding: 3px 10px;
+      font-size: 12px;
     }
   }
 

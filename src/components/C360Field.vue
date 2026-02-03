@@ -263,19 +263,19 @@ const emit = defineEmits<{
   }
 
   .current-value-display {
-    margin-bottom: 16px;
-    padding: 12px;
+    margin-bottom: 12px; // 减少间距
+    padding: 10px; // 减少内边距
     background: #f7f8fa;
-    border-radius: 8px;
+    border-radius: 6px; // 减小圆角
 
     .current-label {
-      font-size: 12px;
+      font-size: 11px; // 减小字体
       color: #969799;
       margin-bottom: 4px;
     }
 
     .current-value-text {
-      font-size: 16px;
+      font-size: 12px; // 进一步减小字体
       color: #323233;
       font-weight: 500;
     }
@@ -285,18 +285,18 @@ const emit = defineEmits<{
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 16px;
+    padding-bottom: 10px; // 统一内边距
     border-bottom: 1px solid #ebedf0;
 
     h3 {
       margin: 0;
-      font-size: 18px;
+      font-size: 14px; // 统一标题字体大小
       font-weight: 600;
       color: #323233;
     }
 
     .van-icon {
-      font-size: 20px;
+      font-size: 16px; // 统一图标大小
       color: #969799;
       cursor: pointer;
     }
@@ -305,15 +305,15 @@ const emit = defineEmits<{
   .popup-content {
     flex: 1;
     overflow-y: auto;
-    padding-top: 16px;
+    padding-top: 12px; // 减少内边距
   }
 
 
   .edit-actions {
     display: flex;
-    gap: 12px;
-    margin-top: 24px;
-    padding-top: 16px;
+    gap: 10px; // 减少间距
+    margin-top: 16px; // 减少间距
+    padding-top: 12px; // 减少内边距
     border-top: 1px solid #ebedf0;
 
     .van-button {

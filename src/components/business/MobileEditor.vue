@@ -703,7 +703,7 @@ const emitUpdate = () => {
 
 <style scoped lang="scss">
 .mobile-editor {
-  padding: 16px;
+  padding: 12px; // 减少内边距
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -714,19 +714,19 @@ const emitUpdate = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 16px;
+  padding-bottom: 10px; // 统一内边距
   border-bottom: 1px solid #ebedf0;
-  margin-bottom: 16px;
+  margin-bottom: 12px; // 统一间距
 
   h3 {
     margin: 0;
-    font-size: 18px;
+    font-size: 14px; // 统一标题字体大小
     font-weight: 600;
     color: #323233;
   }
 
   .van-icon {
-    font-size: 20px;
+    font-size: 16px; // 统一图标大小
     color: #969799;
     cursor: pointer;
   }
@@ -736,13 +736,13 @@ const emitUpdate = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 16px;
+  padding-bottom: 10px; // 统一内边距
   border-bottom: 1px solid #ebedf0;
-  margin-bottom: 16px;
+  margin-bottom: 12px; // 统一间距
 
   h3 {
     margin: 0;
-    font-size: 18px;
+    font-size: 14px; // 统一标题字体大小
     font-weight: 600;
     color: #323233;
     flex: 1;
@@ -750,10 +750,10 @@ const emitUpdate = () => {
   }
 
   .back-icon {
-    font-size: 20px;
+    font-size: 16px; // 统一图标大小
     color: #323233;
     cursor: pointer;
-    padding: 4px;
+    padding: 3px; // 减少内边距
     flex-shrink: 0;
   }
 }
@@ -779,9 +779,9 @@ const emitUpdate = () => {
 
 .mobile-item {
   background: white;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 12px;
+  border-radius: 6px; // 减小圆角
+  padding: 8px 10px; // 减少内边距
+  margin-bottom: 6px; // 减少间距
 
   &:last-child {
     margin-bottom: 0;
@@ -795,16 +795,16 @@ const emitUpdate = () => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 8px; // 减少间距
 
     .mobile-number {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px; // 减少间距
       flex: 1;
 
       .number {
-        font-size: 16px;
+        font-size: 13px; // 进一步减小字体
         font-weight: 600;
         color: #323233;
       }
@@ -814,7 +814,7 @@ const emitUpdate = () => {
         padding: 0;
         
         :deep(.van-field__control) {
-          font-size: 16px;
+          font-size: 13px; // 减小字体
           font-weight: 600;
         }
       }
@@ -853,10 +853,10 @@ const emitUpdate = () => {
       border-radius: 6px;
 
       .section-label {
-        font-size: 14px;
+        font-size: 12px; // 减小字体
         color: #323233;
         font-weight: 500;
-        margin-bottom: 12px;
+        margin-bottom: 8px; // 减少间距
       }
 
       .tag-empty {
@@ -872,7 +872,7 @@ const emitUpdate = () => {
       .tag-options {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 6px; // 减少间距
 
         .tag-option {
           cursor: pointer;
@@ -958,15 +958,15 @@ const emitUpdate = () => {
 }
 
 .relation-selector {
-  margin-top: 16px;
-  padding: 16px;
+  margin-top: 12px; // 减少间距
+  padding: 10px 12px; // 减少内边距
   background: #f7f8fa;
-  border-radius: 8px;
+  border-radius: 6px; // 减小圆角
 
   .selector-label {
-    font-size: 14px;
+    font-size: 12px; // 减小字体
     color: #323233;
-    margin-bottom: 12px;
+    margin-bottom: 8px; // 减少间距
     font-weight: 500;
     display: flex;
     align-items: center;
@@ -1032,15 +1032,15 @@ const emitUpdate = () => {
 }
 
 .number-type-selector {
-  margin-top: 16px;
-  padding: 16px;
+  margin-top: 12px; // 减少间距
+  padding: 10px 12px; // 减少内边距
   background: #f7f8fa;
-  border-radius: 8px;
+  border-radius: 6px; // 减小圆角
 
   .selector-label {
-    font-size: 14px;
+    font-size: 12px; // 减小字体
     color: #323233;
-    margin-bottom: 12px;
+    margin-bottom: 8px; // 减少间距
     font-weight: 500;
   }
 

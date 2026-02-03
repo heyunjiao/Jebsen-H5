@@ -133,10 +133,10 @@ onMounted(async () => {
 .maintenance-container {
   min-height: 100vh;
   background: #f7f8fa;
-  padding: 12px 0;
+  padding: 4px; // 减少内边距，与首屏保持一致
   max-width: 100%;
   box-sizing: border-box;
-  padding-bottom: 20px; // 确保底部有足够空间
+  padding-bottom: 12px; // 减少底部空间
   
   // van-list 样式
   :deep(.van-list) {
@@ -144,46 +144,47 @@ onMounted(async () => {
   }
   
   :deep(.van-list__finished-text) {
-    padding: 16px 0;
+    padding: 12px 0; // 减少内边距
     color: #969799;
-    font-size: 14px;
+    font-size: 12px; // 减小字体
     text-align: center;
   }
   
   :deep(.van-list__loading) {
-    padding: 16px 0;
+    padding: 12px 0; // 减少内边距
     text-align: center;
   }
 }
 
 .maintenance-card {
   background: white;
-  border-radius: 8px;
+  border-radius: 8px; // 与首屏保持一致
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06); // 减小阴影
+  margin-bottom: 3px; // 减少间距，更紧凑
 
   .card-header {
-    padding: 16px;
+    padding: 6px 10px; // 减少内边距
     border-bottom: 1px solid #ebedf0;
     display: flex;
     justify-content: space-between;
     align-items: center;
 
     .record-title {
-      font-size: 16px;
+      font-size: 12px; // 减小字体
       font-weight: 600;
       color: #323233;
     }
   }
 
   .card-content {
-    padding: 16px;
+    padding: 6px 10px; // 减少内边距
 
     .info-row {
       display: flex;
-      margin-bottom: 12px;
-      font-size: 14px;
+      margin-bottom: 6px; // 减少间距
+      font-size: 11px; // 减小字体
+      line-height: 1.3; // 优化行高
 
       &:last-child {
         margin-bottom: 0;
@@ -191,19 +192,21 @@ onMounted(async () => {
 
       .label {
         color: #969799;
-        min-width: 90px;
+        min-width: 75px; // 减少最小宽度
         flex-shrink: 0;
+        font-size: 11px; // 减小字体
       }
 
       .value {
         color: #323233;
         flex: 1;
         word-break: break-all;
+        font-size: 11px; // 减小字体
 
         &.amount {
           color: #ee0a24;
           font-weight: 600;
-          font-size: 16px;
+          font-size: 12px; // 减小字体
         }
       }
       
@@ -211,14 +214,14 @@ onMounted(async () => {
         flex: 1;
         display: flex;
         flex-wrap: wrap;
-        gap: 4px;
+        gap: 3px; // 减少间距
       }
     }
   }
 }
 
 .empty-state {
-  padding: 40px 0;
+  padding: 30px 0; // 减少内边距
 }
 
 // 响应式适配

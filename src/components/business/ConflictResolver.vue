@@ -160,7 +160,7 @@ watch(() => props.show, (newVal) => {
 
 <style scoped lang="scss">
 .conflict-resolver {
-  padding: 16px;
+  padding: 12px; // 减少内边距
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -170,19 +170,19 @@ watch(() => props.show, (newVal) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 16px;
+  padding-bottom: 10px; // 统一内边距
   border-bottom: 1px solid #ebedf0;
   flex-shrink: 0;
 
   h3 {
     margin: 0;
-    font-size: 18px;
+    font-size: 14px; // 统一标题字体大小
     font-weight: 600;
     color: #323233;
   }
 
   .van-icon {
-    font-size: 20px;
+    font-size: 16px; // 统一图标大小
     color: #969799;
     cursor: pointer;
   }
@@ -191,7 +191,7 @@ watch(() => props.show, (newVal) => {
 .popup-content {
   flex: 1;
   overflow-y: auto;
-  padding-top: 16px;
+  padding-top: 12px; // 减少内边距
 }
 
 .conflict-tip {
@@ -201,17 +201,17 @@ watch(() => props.show, (newVal) => {
 .conflict-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 8px; // 减少间距
+  margin-bottom: 12px; // 减少间距
 }
 
 .conflict-item {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 12px;
+  gap: 10px; // 减少间距
+  padding: 8px 10px; // 减少内边距
   background: #f7f8fa;
-  border-radius: 8px;
+  border-radius: 6px; // 减小圆角
   cursor: pointer;
   transition: all 0.2s;
   border: 2px solid transparent;
@@ -244,8 +244,9 @@ watch(() => props.show, (newVal) => {
     .item-info {
       .info-row {
         display: flex;
-        margin-bottom: 4px;
-        font-size: 14px;
+        margin-bottom: 3px; // 减少间距
+        font-size: 12px; // 减小字体
+        line-height: 1.3; // 优化行高
 
         &:last-child {
           margin-bottom: 0;
@@ -253,13 +254,15 @@ watch(() => props.show, (newVal) => {
 
         .label {
           color: #969799;
-          min-width: 60px;
+          min-width: 55px; // 减少最小宽度
           flex-shrink: 0;
+          font-size: 12px; // 减小字体
         }
 
         .value {
           color: #323233;
           font-weight: 500;
+          font-size: 12px; // 减小字体
         }
       }
     }
@@ -267,37 +270,37 @@ watch(() => props.show, (newVal) => {
 }
 
 .note-section {
-  margin-top: 16px;
-  padding-top: 16px;
+  margin-top: 12px; // 减少间距
+  padding-top: 12px; // 减少内边距
   border-top: 1px solid #ebedf0;
 
   :deep(.van-field) {
     border: 1px solid #dcdee0;
-    border-radius: 8px;
+    border-radius: 6px; // 减小圆角
     background: #fff;
-    padding: 12px;
+    padding: 8px 10px; // 减少内边距
 
     &:focus-within {
       border-color: #1989fa;
     }
 
     .van-field__control {
-      min-height: 60px;
-      font-size: 14px;
-      line-height: 1.5;
+      min-height: 50px; // 减小最小高度
+      font-size: 12px; // 减小字体
+      line-height: 1.4; // 优化行高
     }
 
     .van-field__word-limit {
       color: #969799;
-      font-size: 12px;
+      font-size: 11px; // 减小字体
     }
   }
 }
 
 .popup-footer {
   display: flex;
-  gap: 12px;
-  padding-top: 16px;
+  gap: 10px; // 减少间距
+  padding-top: 12px; // 减少内边距
   border-top: 1px solid #ebedf0;
   flex-shrink: 0;
 
