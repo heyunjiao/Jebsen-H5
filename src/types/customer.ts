@@ -22,6 +22,9 @@ export interface TagPool {
   id: string
   name: string
   color?: string
+  category?: string // 标签分类
+  required?: boolean // 是否必选
+  minSelect?: number // 最少选择数量（如爱好≥1项）
 }
 
 // 电话号码项类型

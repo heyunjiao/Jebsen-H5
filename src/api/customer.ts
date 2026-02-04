@@ -179,6 +179,11 @@ export const customerApi = {
     })
   },
 
+  // 批量更新标签（一次性提交）
+  updateTags: (tags: string[]): Promise<ApiResponse<{ tags: string[] }>> => {
+    return request.put('/customer/tags', { tags })
+  },
+
   // 新增电话号码
   addMobileItem: (data: {
     mobile: string

@@ -79,6 +79,7 @@
           <!-- 电话部分 -->
           <div class="phone-section">
             <div class="phone-row">
+              <Phone :size="14" class="phone-icon" />
               <span class="section-title">电话：</span>
               <div class="phone-list">
                 <div
@@ -88,7 +89,7 @@
                   :class="{ 'is-primary': item.isPrimary }"
                 >
                   <span class="phone-number">{{ item.mobile }}</span>
-                  <van-tag v-if="item.isPrimary" type="primary" :size="'small' as any">主号</van-tag>
+                  <van-tag v-if="item.isPrimary" type="primary" :size="'small' as any" class="tag-primary">主号</van-tag>
                   <!-- 业务标签显示（车主、送修人） -->
                   <template v-if="item.businessTags && item.businessTags.length > 0">
                     <van-tag
@@ -97,6 +98,7 @@
                       :type="getBusinessTagType(businessTag)"
                       plain
                       :size="'small' as any"
+                      class="tag-business"
                     >
                       {{ businessTag }}
                     </van-tag>
@@ -139,7 +141,10 @@
       <!-- 3. 车辆信息（显示2辆，确保在第一屏显示） -->
       <div class="info-card vehicle-card">
         <div class="card-header">
-          <div class="card-title">车辆信息</div>
+          <div class="card-title">
+            <CarFront :size="16" class="title-icon" />
+            车辆信息
+          </div>
           <van-button
             v-if="customerStore.vehicles.length > 2"
             type="primary"
@@ -158,21 +163,24 @@
           >
             <div class="vehicle-header">
               <div class="vehicle-main-info">
-                <div class="vehicle-model">{{ vehicle.vehicleModel }}</div>
-                <div class="vehicle-info">
-                  <span class="info-value">{{ vehicle.vin || '未知' }}</span>
-                  <span class="info-value">{{ vehicle.licensePlate || '未知' }}</span>
+                <CarFront :size="16" class="vehicle-icon" />
+                <div class="vehicle-info-wrapper">
+                  <div class="vehicle-info-row">
+                    <span class="vehicle-model">{{ vehicle.vehicleModel }}</span>
+                    <span class="info-value plate-number">{{ vehicle.licensePlate || '未知' }}</span>
+                    <span class="info-value">{{ vehicle.vin || '未知' }}</span>
+                    <div class="vehicle-status-wrapper" @click="openVehicleStatusSheet(vehicle.id)">
+                      <van-tag
+                        :type="getVehicleStatusType(vehicle.status)"
+                        :size="'small' as any"
+                        class="status-tag-clickable"
+                      >
+                        {{ vehicle.status }}
+                      </van-tag>
+                      <van-icon name="arrow-down" class="status-arrow-icon" />
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div class="vehicle-status-wrapper" @click="openVehicleStatusSheet(vehicle.id)">
-                <van-tag
-                  :type="getVehicleStatusType(vehicle.status)"
-                  :size="'small' as any"
-                  class="status-tag-clickable"
-                >
-                  {{ vehicle.status }}
-                </van-tag>
-                <van-icon name="arrow-down" class="status-arrow-icon" />
               </div>
               <van-action-sheet
                 v-model:show="vehicleStatusSheets[vehicle.id]"
@@ -192,7 +200,10 @@
         @click="handleCouponCardClick"
       >
         <div class="coupon-header">
-          <div class="coupon-title">{{ nearestExpiringAsset.name }}</div>
+          <div class="coupon-title">
+            <Ticket :size="16" class="title-icon" />
+            {{ nearestExpiringAsset.name }}
+          </div>
           <van-icon name="arrow" class="arrow-icon" />
         </div>
         <div class="coupon-info">
@@ -210,16 +221,20 @@
       <!-- 5. 标签信息 -->
       <div class="info-card tags-card">
         <div class="card-header">
-          <div class="card-title">客户标签</div>
+          <div class="card-title">
+            <Tag :size="16" class="title-icon" />
+            客户标签
+          </div>
         </div>
         <div class="tags-content">
           <div v-if="customerStore.profile.tags.length > 0" class="tags-list">
             <van-tag
               v-for="(tag, index) in customerStore.profile.tags"
               :key="index"
-              :type="getTagType(tag)"
+              :type="getTagInfo(tag).type"
+              :style="getTagInfo(tag).color ? { backgroundColor: getTagInfo(tag).color, borderColor: getTagInfo(tag).color, color: '#666' } : {}"
               size="medium"
-              class="tag-item clickable-tag"
+              :class="['tag-item', 'clickable-tag', getTagInfo(tag).className]"
               @click="showTagManager = true"
             >
               {{ tag }}
@@ -232,32 +247,46 @@
       <!-- 6. 基本信息块（移到车辆信息之后） -->
       <div class="info-card basic-info-card">
         <div class="card-header">
-          <div class="card-title">基本信息</div>
+          <div class="card-title">
+            <UserCircle :size="16" class="title-icon" />
+            基本信息
+          </div>
           <van-button
             type="primary"
             size="mini"
             plain
-            icon="edit"
             @click="handleOpenBasicInfoEditor"
+            class="edit-btn"
           >
+            <Edit2 :size="14" class="edit-icon" />
             编辑
           </van-button>
         </div>
-        <div class="card-content">
-          <van-cell title="姓名" :value="String(customerStore.profile.name.value)" />
-          <van-cell title="年龄" :value="String(customerStore.profile.age.value)" />
-          <van-cell
-            v-if="!('items' in customerStore.profile.mobile)"
-            title="手机号"
-            :value="String(customerStore.profile.mobile.value)"
-          />
-          <van-cell title="性别" :value="String(customerStore.profile.gender.value)" />
-          <van-cell title="城市" :value="String(customerStore.profile.city.value)" />
-          <van-cell
+        <div class="basic-info-grid">
+          <div class="info-grid-item">
+            <span class="info-label">姓名</span>
+            <span class="info-value">{{ customerStore.profile.name.value || '未知' }}</span>
+          </div>
+          <div class="info-grid-item">
+            <span class="info-label">年龄</span>
+            <span class="info-value">{{ customerStore.profile.age.value || '未知' }}</span>
+          </div>
+          <div class="info-grid-item">
+            <span class="info-label">性别</span>
+            <span class="info-value">{{ customerStore.profile.gender.value || '未知' }}</span>
+          </div>
+          <div class="info-grid-item">
+            <span class="info-label">城市</span>
+            <span class="info-value">{{ customerStore.profile.city.value || '未知' }}</span>
+          </div>
+          <!-- <div
             v-if="customerStore.profile?.customerType"
-            title="客户类型"
-            :value="String(customerStore.profile.customerType.value)"
-          />
+            class="info-grid-item"
+            style="grid-column: 1 / -1;"
+          >
+            <span class="info-label">客户类型</span>
+            <span class="info-value">{{ customerStore.profile.customerType.value || '未知' }}</span>
+          </div> -->
         </div>
       </div>
     </div>
@@ -671,35 +700,43 @@
           <van-icon name="cross" @click="showTagManager = false" />
         </div>
         <div class="popup-content">
-          <!-- 已选标签区域 -->
-          <div v-if="selectedTagsInManager.length > 0" class="tag-section">
-            <div class="tag-section-title">已选标签</div>
-            <div class="tag-list selected-tags">
-              <van-tag
-                v-for="tagName in selectedTagsInManager"
-                :key="tagName"
-                type="primary"
-                size="medium"
-                class="tag-item is-selected"
-                @click="toggleTag(tagName)"
-              >
-                {{ tagName }}
-              </van-tag>
+          <!-- 空状态 -->
+          <div v-if="customerStore.tagPool.length === 0" class="empty-state">
+            <van-empty description="标签数据加载中..." />
+          </div>
+          
+          <div v-else-if="Object.keys(groupedTags).length === 0" class="empty-state">
+            <van-empty description="暂无标签分类数据" />
+            <div style="padding: 16px; font-size: 12px; color: #969799;">
+              标签池数据: {{ customerStore.tagPool.length }} 条
             </div>
           </div>
           
-          <!-- 未选标签区域 -->
-          <div class="tag-section">
-            <div class="tag-section-title">
-              {{ selectedTagsInManager.length > 0 ? '未选标签' : '选择标签' }}
+          <!-- 按分类展示标签 -->
+          <div
+            v-else
+            v-for="(tags, category) in groupedTags"
+            :key="category"
+            class="tag-category-section"
+          >
+            <div class="tag-category-title">
+              <span class="category-name">{{ category }}</span>
+              <span v-if="tags.some(t => t.required)" class="required-badge">必选</span>
+              <span v-if="tags.some(t => t.minSelect)" class="min-select-badge">
+                至少{{ tags.find(t => t.minSelect)?.minSelect }}项
+              </span>
+              <span class="selected-count">
+                (已选{{ getSelectedCountInCategory(category) }}/{{ tags.length }})
+              </span>
             </div>
-            <div class="tag-list unselected-tags">
+            <div class="tag-list">
               <van-tag
-                v-for="tag in unselectedTagsInManager"
+                v-for="tag in tags"
                 :key="tag.id"
-                type="default"
+                :type="isTagSelectedInManager(tag.name) ? 'primary' : 'default'"
                 size="medium"
                 class="tag-item"
+                :class="{ 'is-selected': isTagSelectedInManager(tag.name) }"
                 @click="toggleTag(tag.name)"
               >
                 {{ tag.name }}
@@ -757,15 +794,7 @@
               placeholder="请输入年龄"
               clearable
             />
-            <van-field
-              v-if="!('items' in customerStore.profile.mobile)"
-              v-model="basicInfoForm.mobile"
-              name="mobile"
-              label="手机号"
-              placeholder="请输入11位手机号"
-              :rules="mobileRules"
-              clearable
-            />
+            <!-- 手机号已在姓名卡片中管理，这里不再显示 -->
             <van-field
               v-model="basicInfoForm.gender"
               name="gender"
@@ -838,6 +867,8 @@ import OperationLogDialog from '@/components/business/OperationLogDialog.vue'
 import { showToast, showLoadingToast, closeToast } from 'vant'
 import { customerApi } from '@/api/customer'
 import type { TagPool, MobileData } from '@/api/customer'
+// 导入 Lucide 图标
+import { Phone, CarFront, Ticket, Tag, UserCircle, Edit2 } from 'lucide-vue-next'
 
 const customerStore = useCustomerStore()
 const activeTab = ref('maintenance')
@@ -1018,24 +1049,112 @@ const isTagSelected = (tagName: string) => {
   return customerStore.profile?.tags.includes(tagName) || false
 }
 
-// 获取标签类型（用于颜色标识）
-const getTagType = (tagName: string): any => {
-  const tag = customerStore.tagPool.find((t) => t.name === tagName)
-  if (!tag) return 'default'
+// 将颜色转换为浅色系的辅助函数
+const convertToLightColor = (color: string): string => {
+  if (!color) return color
   
-  // 根据标签名称映射类型（使用不同颜色做标识）
-  const typeMap: Record<string, any> = {
-    '战败客户': 'default',
-    '高意向': 'success',
-    '置换需求': 'warning',
-    '首购客户': 'primary',
-    'VIP客户': 'danger',
-    '潜在客户': 'default',
-    '已成交': 'success',
-    '流失客户': 'default',
+  // 如果是 hex 颜色
+  if (color.startsWith('#')) {
+    const hex = color.slice(1)
+    const r = parseInt(hex.slice(0, 2), 16)
+    const g = parseInt(hex.slice(2, 4), 16)
+    const b = parseInt(hex.slice(4, 6), 16)
+    
+    // 转换为 HSL
+    const rNorm = r / 255
+    const gNorm = g / 255
+    const bNorm = b / 255
+    
+    const max = Math.max(rNorm, gNorm, bNorm)
+    const min = Math.min(rNorm, gNorm, bNorm)
+    const delta = max - min
+    
+    let h = 0
+    let s = 0
+    let l = (max + min) / 2
+    
+    if (delta !== 0) {
+      s = l > 0.5 ? delta / (2 - max - min) : delta / (max + min)
+      
+      if (max === rNorm) {
+        h = ((gNorm - bNorm) / delta + (gNorm < bNorm ? 6 : 0)) / 6
+      } else if (max === gNorm) {
+        h = ((bNorm - rNorm) / delta + 2) / 6
+      } else {
+        h = ((rNorm - gNorm) / delta + 4) / 6
+      }
+    }
+    
+    // 转换为浅色系：提高亮度到 0.88-0.92，降低饱和度到 0.25-0.35
+    l = Math.max(0.88, Math.min(0.92, l * 1.2)) // 提高亮度
+    s = Math.max(0.25, Math.min(0.35, s * 0.6)) // 降低饱和度但保持一定色彩
+    
+    // 转换回 RGB
+    const c = (1 - Math.abs(2 * l - 1)) * s
+    const x = c * (1 - Math.abs(((h * 6) % 2) - 1))
+    const m = l - c / 2
+    
+    let rNew = 0, gNew = 0, bNew = 0
+    
+    if (h < 1/6) {
+      rNew = c; gNew = x; bNew = 0
+    } else if (h < 2/6) {
+      rNew = x; gNew = c; bNew = 0
+    } else if (h < 3/6) {
+      rNew = 0; gNew = c; bNew = x
+    } else if (h < 4/6) {
+      rNew = 0; gNew = x; bNew = c
+    } else if (h < 5/6) {
+      rNew = x; gNew = 0; bNew = c
+    } else {
+      rNew = c; gNew = 0; bNew = x
+    }
+    
+    rNew = Math.round((rNew + m) * 255)
+    gNew = Math.round((gNew + m) * 255)
+    bNew = Math.round((bNew + m) * 255)
+    
+    return `#${rNew.toString(16).padStart(2, '0')}${gNew.toString(16).padStart(2, '0')}${bNew.toString(16).padStart(2, '0')}`
   }
   
-  return typeMap[tagName] || 'default'
+  return color
+}
+
+// 获取标签信息（用于颜色和样式）
+const getTagInfo = (tagName: string) => {
+  const tag = customerStore.tagPool.find((t) => t.name === tagName)
+  if (!tag) {
+    return {
+      type: 'default' as const,
+      color: undefined,
+      className: '',
+    }
+  }
+  
+  // 特殊标签处理："首保流失15个月"和"PCN售后"
+  const specialTags = ['首保流失15个月', 'PCN售后']
+  const isSpecialTag = specialTags.includes(tagName)
+  
+  // 如果标签有color属性，使用自定义颜色（转换为浅色系）
+  if (tag.color) {
+    return {
+      type: 'default' as const,
+      color: convertToLightColor(tag.color),
+      className: isSpecialTag ? 'special-tag' : '',
+    }
+  }
+  
+  // 否则使用默认类型
+  return {
+    type: 'default' as const,
+    color: undefined,
+    className: isSpecialTag ? 'special-tag' : '',
+  }
+}
+
+// 获取标签类型（用于向后兼容）
+const getTagType = (tagName: string): any => {
+  return getTagInfo(tagName).type
 }
 
 // 获取业务标签类型（车主、送修人等）
@@ -1131,8 +1250,109 @@ const unselectedTagsInManager = computed(() => {
   return customerStore.tagPool.filter(tag => !selectedTags.value.includes(tag.name))
 })
 
-// 保存标签
+// 按分类分组的标签（用于标签管理弹窗）
+const groupedTags = computed(() => {
+  const groups: Record<string, typeof customerStore.tagPool> = {}
+  
+  // 调试信息
+  console.log('[标签管理] tagPool数据:', customerStore.tagPool)
+  console.log('[标签管理] tagPool数量:', customerStore.tagPool.length)
+  
+  customerStore.tagPool.forEach(tag => {
+    const category = tag.category || '其他'
+    if (!groups[category]) {
+      groups[category] = []
+    }
+    groups[category].push(tag)
+  })
+  
+  // 按分类名称排序
+  const sortedGroups: Record<string, typeof customerStore.tagPool> = {}
+  const categoryOrder = [
+    '意向级别',
+    'SC【必选】',
+    'SA【必选】',
+    '续保【必选】',
+    'POC【必选】',
+    '免打扰车主',
+    '线上活动',
+    '爱好(≥1项)',
+  ]
+  
+  // 先按顺序添加已知分类
+  categoryOrder.forEach(category => {
+    if (groups[category]) {
+      sortedGroups[category] = groups[category]
+    }
+  })
+  
+  // 再添加其他分类
+  Object.keys(groups).forEach(category => {
+    if (!categoryOrder.includes(category)) {
+      sortedGroups[category] = groups[category]
+    }
+  })
+  
+  console.log('[标签管理] 分组后的数据:', sortedGroups)
+  console.log('[标签管理] 分类数量:', Object.keys(sortedGroups).length)
+  
+  return sortedGroups
+})
+
+// 获取分类中已选标签数量
+const getSelectedCountInCategory = (category: string) => {
+  const categoryTags = groupedTags.value[category] || []
+  return categoryTags.filter(tag => selectedTags.value.includes(tag.name)).length
+}
+
+// 验证必选标签
+const validateRequiredTags = (): string | null => {
+  const requiredCategories: string[] = []
+  
+  // 检查所有必选分类
+  Object.keys(groupedTags.value).forEach(category => {
+    const categoryTags = groupedTags.value[category]
+    const requiredTags = categoryTags.filter(tag => tag.required)
+    
+    if (requiredTags.length > 0) {
+      const selectedInCategory = categoryTags.filter(tag => 
+        selectedTags.value.includes(tag.name)
+      )
+      
+      if (selectedInCategory.length === 0) {
+        requiredCategories.push(category)
+      }
+    }
+    
+    // 检查最少选择数量要求
+    const minSelectTag = categoryTags.find(tag => tag.minSelect)
+    if (minSelectTag && minSelectTag.minSelect) {
+      const selectedInCategory = categoryTags.filter(tag => 
+        selectedTags.value.includes(tag.name)
+      )
+      
+      if (selectedInCategory.length < minSelectTag.minSelect) {
+        return `${category}至少需要选择${minSelectTag.minSelect}项`
+      }
+    }
+  })
+  
+  if (requiredCategories.length > 0) {
+    return `请至少选择一项：${requiredCategories.join('、')}`
+  }
+  
+  return null
+}
+
+// 保存标签（一次性提交）
 const handleSaveTags = async () => {
+  // 验证必选标签
+  const validationError = validateRequiredTags()
+  if (validationError) {
+    showToast(validationError)
+    return
+  }
+  
   savingTags.value = true
   showLoadingToast({
     message: '保存中...',
@@ -1140,27 +1360,11 @@ const handleSaveTags = async () => {
   })
 
   try {
-    const currentTags = customerStore.profile?.tags || []
-    const addedTags = selectedTags.value.filter(t => !currentTags.includes(t))
-    const removedTags = currentTags.filter(t => !selectedTags.value.includes(t))
-
-    // 先添加新标签
-    for (const tagName of addedTags) {
-      const tag = customerStore.tagPool.find(t => t.name === tagName)
-      if (tag) {
-        await customerStore.addTag(tag.id)
-      }
-    }
-
-    // 再删除标签
-    for (const tagName of removedTags) {
-      await customerStore.removeTag(tagName)
-    }
-
+    // 一次性提交所有选中的标签
+    await customerStore.updateTags(selectedTags.value)
     showTagManager.value = false
-    showToast('保存成功')
   } catch (error: any) {
-    showToast(error.message || '保存失败，请重试')
+    // 错误已在store中处理
   } finally {
     savingTags.value = false
     closeToast()
@@ -1386,7 +1590,7 @@ const openBasicInfoEditor = () => {
     basicInfoForm.value = {
       name: String(customerStore.profile.name.value || ''),
       age: String(customerStore.profile.age.value || ''),
-      mobile: !('items' in customerStore.profile.mobile) ? String(customerStore.profile.mobile.value || '') : '',
+      mobile: '', // 手机号已在MobileEditor中管理，这里不再使用
       gender: String(customerStore.profile.gender.value || ''),
       city: String(customerStore.profile.city.value || ''),
       customerType: customerStore.profile.customerType ? String(customerStore.profile.customerType.value || '') : '',
@@ -1415,12 +1619,7 @@ const handleSaveBasicInfo = async () => {
     return
   }
 
-  // 手机号格式验证
-  if (basicInfoForm.value.mobile && !/^1[3-9]\d{9}$/.test(basicInfoForm.value.mobile)) {
-    console.warn('[Home] 手机号格式不正确')
-    showToast('手机号格式不正确')
-    return
-  }
+  // 手机号已在MobileEditor中管理，这里不再验证
 
   // 先检查是否有字段变更（在显示 loading 之前）
   const updateData: Record<string, any> = {}
@@ -1432,9 +1631,7 @@ const handleSaveBasicInfo = async () => {
   if (basicInfoForm.value.age !== String(customerStore.profile.age.value || '')) {
     updateData.age = basicInfoForm.value.age ? Number(basicInfoForm.value.age) : null
   }
-  if (!('items' in customerStore.profile.mobile) && basicInfoForm.value.mobile !== String(customerStore.profile.mobile.value || '')) {
-    updateData.mobile = basicInfoForm.value.mobile
-  }
+  // 手机号已在MobileEditor中管理，这里不再处理
   if (basicInfoForm.value.gender !== String(customerStore.profile.gender.value || '')) {
     updateData.gender = basicInfoForm.value.gender
   }
@@ -1580,10 +1777,10 @@ onMounted(async () => {
 .home-container {
   min-height: 100vh;
   background: #f7f8fa;
-  padding: 4px; // 减少容器内边距
+  padding: 2px; // 进一步减少容器内边距
   max-width: 100%;
   box-sizing: border-box;
-  padding-bottom: 12px; // 减少底部空间
+  padding-bottom: 8px; // 进一步减少底部空间
   overflow-y: auto; // 允许滚动
 }
 
@@ -1591,8 +1788,8 @@ onMounted(async () => {
 .first-screen {
   display: flex;
   flex-direction: column;
-  gap: 3px; // 减少间距，更紧凑
-  margin-bottom: 4px;
+  gap: 2px; // 进一步减少间距，更紧凑
+  margin-bottom: 2px;
 }
 
 // 姓名卡片（名片样式优化 - 大厂风格）
@@ -1616,8 +1813,8 @@ onMounted(async () => {
   }
   
   .name-section {
-    padding: 8px 12px; // 减少内边距
-    padding-bottom: 8px;
+    padding: 6px 10px; // 进一步减少内边距
+    padding-bottom: 6px;
     position: relative;
     
     // 分隔线，从蓝色装饰条右边开始
@@ -1737,10 +1934,10 @@ onMounted(async () => {
   }
   
   .card-content-wrapper {
-    padding: 8px 12px; // 减少内边距
+    padding: 6px 10px; // 进一步减少内边距
     display: flex;
     flex-direction: column;
-    gap: 8px; // 减少间距
+    gap: 6px; // 进一步减少间距
     
     .phone-section {
       .phone-row {
@@ -1748,6 +1945,11 @@ onMounted(async () => {
         align-items: center;
         gap: 6px;
         flex-wrap: nowrap;
+        
+        .phone-icon {
+          flex-shrink: 0;
+          color: #646566;
+        }
         
         .section-title {
           font-size: 11px; // 使用弱化样式，类似客户ID
@@ -1793,6 +1995,12 @@ onMounted(async () => {
             white-space: nowrap;
             line-height: 1.4;
             letter-spacing: 0.3px; // 增加字间距，提升可读性
+          }
+          
+          .tag-primary,
+          .tag-business {
+            margin: 0;
+            flex-shrink: 0;
           }
         }
         
@@ -1929,35 +2137,38 @@ onMounted(async () => {
       
       .vehicle-header {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        align-items: flex-start;
         gap: 8px;
         flex-wrap: nowrap;
         
         .vehicle-main-info {
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           gap: 8px;
           flex: 1;
           min-width: 0;
           flex-wrap: nowrap;
           overflow: hidden;
           
-          .vehicle-model {
-            font-size: 12px; // 减小字体
-            font-weight: 600;
-            color: #323233;
+          .vehicle-icon {
             flex-shrink: 0;
-            white-space: nowrap;
-            line-height: 1.3;
+            color: #646566;
           }
           
-          .vehicle-info {
+          .vehicle-info-wrapper {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+          }
+          
+          .vehicle-info-row {
             display: flex;
             flex-direction: row;
-            gap: 6px; // 减少间距
-            flex-wrap: nowrap;
             align-items: center;
+            gap: 6px;
+            flex-wrap: nowrap;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             flex: 1;
@@ -1967,46 +2178,61 @@ onMounted(async () => {
               display: none;
             }
             
+            .vehicle-model {
+              font-size: 12px; // 减小字体
+              font-weight: 600;
+              color: #323233;
+              flex-shrink: 0;
+              white-space: nowrap;
+              line-height: 1.3;
+            }
+            
             .info-value {
               font-size: 11px; // 减小字体
               color: #646566;
               line-height: 1.3; // 优化行高
               white-space: nowrap;
               flex-shrink: 0;
+              
+              &.plate-number {
+                font-weight: 500;
+                color: #323233;
+              }
             }
-          }
-        }
-        
-        .vehicle-status-wrapper {
-          display: flex;
-          align-items: center;
-          gap: 2px; // 减少间距
-          cursor: pointer;
-          padding: 2px 5px; // 减少内边距
-          border-radius: 3px; // 减小圆角
-          transition: background-color 0.2s;
-          flex-shrink: 0;
-          
-          &:hover {
-            background-color: #ebedf0;
-          }
-          
-          &:active {
-            background-color: #dcdee0;
-          }
-          
-          .status-tag-clickable {
-            margin: 0;
-          }
-          
-          .status-arrow-icon {
-            font-size: 10px; // 减小图标
-            color: #969799;
-            transition: transform 0.2s;
-          }
-          
-          &:active .status-arrow-icon {
-            transform: rotate(180deg);
+            
+            .vehicle-status-wrapper {
+              display: flex;
+              align-items: center;
+              gap: 2px; // 减少间距
+              cursor: pointer;
+              padding: 2px 5px; // 减少内边距
+              border-radius: 3px; // 减小圆角
+              transition: background-color 0.2s;
+              flex-shrink: 0;
+              margin-left: auto; // 状态标签靠右对齐
+              
+              &:hover {
+                background-color: #ebedf0;
+              }
+              
+              &:active {
+                background-color: #dcdee0;
+              }
+              
+              .status-tag-clickable {
+                margin: 0;
+              }
+              
+              .status-arrow-icon {
+                font-size: 10px; // 减小图标
+                color: #969799;
+                transition: transform 0.2s;
+              }
+              
+              &:active .status-arrow-icon {
+                transform: rotate(180deg);
+              }
+            }
           }
         }
       }
@@ -2025,23 +2251,22 @@ onMounted(async () => {
     
     .tags-list {
       display: flex;
-      flex-wrap: nowrap;
-      gap: 3px; // 减少间距
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      
-      &::-webkit-scrollbar {
-        display: none;
-      }
+      flex-wrap: wrap;
+      gap: 6px;
       
       .clickable-tag {
         cursor: pointer;
         transition: all 0.2s;
-        flex-shrink: 0;
-        white-space: nowrap;
+        margin: 0;
         
         &:active {
           transform: scale(0.95);
+        }
+        
+        // 特殊标签样式："首保流失15个月"和"PCN售后"
+        &.special-tag {
+          opacity: 0.85;
+          font-weight: 500;
         }
       }
     }
@@ -2336,59 +2561,78 @@ onMounted(async () => {
   
   // 标签管理弹窗特殊样式
   &.tag-manager {
-    .tag-section {
-      margin-bottom: 12px; // 减少间距
+    .tag-category-section {
+      margin-bottom: 16px;
       
       &:last-child {
         margin-bottom: 0;
       }
       
-      .tag-section-title {
-        font-size: 12px; // 减小字体
+      .tag-category-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
         font-weight: 600;
-        color: #646566;
-        margin-bottom: 8px; // 减少间距
-        padding-bottom: 6px; // 减少内边距
+        color: #323233;
+        margin-bottom: 10px;
+        padding-bottom: 8px;
         border-bottom: 1px solid #ebedf0;
+        
+        .category-name {
+          flex: 1;
+        }
+        
+        .required-badge {
+          padding: 2px 6px;
+          background: #fff4e8;
+          color: #ff976a;
+          border-radius: 4px;
+          font-size: 11px;
+          font-weight: 500;
+        }
+        
+        .min-select-badge {
+          padding: 2px 6px;
+          background: #e6f7ff;
+          color: #1890ff;
+          border-radius: 4px;
+          font-size: 11px;
+          font-weight: 500;
+        }
+        
+        .selected-count {
+          font-size: 11px;
+          color: #969799;
+          font-weight: normal;
+        }
       }
       
       .tag-list {
         display: flex;
         flex-wrap: wrap;
-        gap: 6px; // 减少间距
-        padding: 6px 0; // 减少内边距
+        gap: 8px;
+        padding: 8px 0;
         
-        &.selected-tags {
-          min-height: 32px; // 减小最小高度
-          padding: 8px 10px; // 减少内边距
-          background: #f7f8fa;
-          border-radius: 6px; // 减小圆角
-          border: 1px dashed #ebedf0;
-        }
-        
-        &.unselected-tags {
-          min-height: 32px; // 减小最小高度
-        }
-      }
-      
-      .tag-item {
-        cursor: pointer;
-        transition: all 0.2s;
-        user-select: none;
-        
-        &:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        
-        &:active {
-          transform: scale(0.95);
-          opacity: 0.8;
-        }
-        
-        &.is-selected {
-          // 选中状态已经有 primary 类型的样式，这里可以添加额外效果
-          box-shadow: 0 2px 4px rgba(25, 137, 250, 0.2);
+        .tag-item {
+          cursor: pointer;
+          transition: all 0.2s;
+          user-select: none;
+          margin: 0;
+          
+          &:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          }
+          
+          &:active {
+            transform: scale(0.95);
+            opacity: 0.8;
+          }
+          
+          &.is-selected {
+            box-shadow: 0 2px 4px rgba(25, 137, 250, 0.2);
+          }
         }
       }
     }
@@ -2403,7 +2647,7 @@ onMounted(async () => {
 
 .main-tabs {
   // 优化 tab 样式，使其更紧凑
-  margin-top: 4px; // 减少顶部间距
+  margin-top: 2px; // 进一步减少顶部间距
   
   :deep(.van-tabs__wrap) {
     padding: 0 2px; // 进一步减少左右内边距
@@ -2416,10 +2660,10 @@ onMounted(async () => {
   
   :deep(.van-tab) {
     font-size: 12px !important; // 进一步减小字体
-    padding: 6px 10px !important; // 进一步减少内边距
+    padding: 5px 8px !important; // 进一步减少内边距
     line-height: 1.2 !important;
-    min-height: 32px !important; // 进一步减小最小高度
-    height: 32px !important; // 固定高度
+    min-height: 30px !important; // 进一步减小最小高度
+    height: 30px !important; // 固定高度
     flex: 0 0 auto !important; // 不自动扩展
   }
   
@@ -2429,8 +2673,8 @@ onMounted(async () => {
   }
   
   :deep(.van-tabs__content) {
-    padding-bottom: 8px; // 进一步减少底部空间
-    padding-top: 4px; // 减少顶部空间
+    padding-bottom: 4px; // 进一步减少底部空间
+    padding-top: 2px; // 进一步减少顶部空间
   }
 }
 
@@ -2811,6 +3055,24 @@ onMounted(async () => {
     font-size: 12px; // 减小字体
     font-weight: 600;
     color: #323233;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    
+    .title-icon {
+      flex-shrink: 0;
+      color: #646566;
+    }
+  }
+  
+  .edit-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    
+    .edit-icon {
+      flex-shrink: 0;
+    }
   }
 
   .card-content {
@@ -2844,6 +3106,70 @@ onMounted(async () => {
       .van-cell__value {
         font-size: 11px; // 减小字体
         color: #323233;
+      }
+    }
+  }
+  
+  // 基本信息网格布局
+  &.basic-info-card {
+    .card-content {
+      // 基本信息卡片不使用 card-content 的网格布局
+      display: block;
+      padding: 0;
+    }
+    
+    .basic-info-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr); // 改为5列
+      gap: 0;
+      padding: 0;
+      
+      .info-grid-item {
+        padding: 6px 3px; // 进一步减少内边距，适应5列布局
+        display: flex;
+        flex-direction: column;
+        align-items: center; // 水平居中
+        justify-content: center; // 垂直居中
+        gap: 2px; // 减少标签和值之间的间距
+        border-bottom: 1px solid #f7f8fa;
+        border-right: 1px solid #f7f8fa;
+        text-align: center; // 文本居中
+        
+        &:nth-child(5n) {
+          border-right: none;
+        }
+        
+        &:nth-last-child(-n+5) {
+          border-bottom: none;
+        }
+        
+        // 跨列显示（客户类型）
+        &[style*="grid-column"] {
+          grid-column: 1 / -1;
+          border-right: none;
+          border-bottom: 1px solid #f7f8fa;
+          padding: 6px 3px; // 保持一致的紧凑内边距
+          
+          &:last-child {
+            border-bottom: none;
+          }
+        }
+        
+        .info-label {
+          font-size: 10px; // 减小字体
+          color: #969799;
+          font-weight: 400;
+          line-height: 1.2;
+          text-align: center; // 文本居中
+        }
+        
+        .info-value {
+          font-size: 11px; // 减小字体
+          color: #323233;
+          font-weight: 500;
+          line-height: 1.3;
+          text-align: center; // 文本居中
+        }
       }
     }
   }

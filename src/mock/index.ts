@@ -406,6 +406,38 @@ export async function mockRequestInterceptor(
         }
       }
     }
+    // PUT /api/customer/tags (批量更新标签)
+    else if (method === 'put' && fullPath.includes('/customer/tags') && !fullPath.includes('/pool')) {
+      await delay(800)
+      const body = config.data as any
+      const { tags } = body
+      
+      if (!Array.isArray(tags)) {
+        mockResponse = {
+          code: 400,
+          message: '标签格式不正确',
+          data: null,
+        }
+      } else {
+        // 验证标签是否都在标签池中
+        const invalidTags = tags.filter((tagName: string) => !mockTagPool.find(t => t.name === tagName))
+        if (invalidTags.length > 0) {
+          mockResponse = {
+            code: 400,
+            message: `以下标签不存在: ${invalidTags.join('、')}`,
+            data: null,
+          }
+        } else {
+          // 更新标签列表
+          mockCustomerProfile.tags = [...tags]
+          mockResponse = {
+            code: 200,
+            message: '更新成功',
+            data: { tags: mockCustomerProfile.tags },
+          }
+        }
+      }
+    }
     // POST /api/customer/mobile/items
     else if (method === 'post' && fullPath.includes('/customer/mobile/items')) {
       await delay(600)

@@ -153,15 +153,73 @@ export const useCustomerStore = defineStore('customer', () => {
       }
     } catch (error: any) {
       // Fallback: 使用本地数据（静默处理，不显示警告）
+      // 使用与Mock数据一致的分类标签（莫兰迪色系）
       tagPool.value = [
-        { id: 'tag1', name: '战败客户', color: '#ff4d4f' },
-        { id: 'tag2', name: '高意向', color: '#52c41a' },
-        { id: 'tag3', name: '置换需求', color: '#1890ff' },
-        { id: 'tag4', name: '首购客户', color: '#722ed1' },
-        { id: 'tag5', name: 'VIP客户', color: '#fa8c16' },
-        { id: 'tag6', name: '潜在客户', color: '#13c2c2' },
-        { id: 'tag7', name: '已成交', color: '#eb2f96' },
-        { id: 'tag8', name: '流失客户', color: '#8c8c8c' },
+        // 意向级别 - 灰蓝色系
+        { id: 'intent_cold', name: '冷', category: '意向级别', color: '#A8B5C0' },
+        { id: 'intent_warm', name: '暖', category: '意向级别', color: '#D8C8A8' },
+        { id: 'intent_hot', name: '热', category: '意向级别', color: '#D4B8B8' },
+        // SC【必选】- 灰绿色系
+        { id: 'sc_pmp', name: 'PMP邀约', category: 'SC【必选】', required: true, color: '#B8C8B8' },
+        { id: 'sc_full_payment', name: '全款', category: 'SC【必选】', required: true, color: '#B8C8B8' },
+        { id: 'sc_employee_referral', name: '员工介绍', category: 'SC【必选】', required: true, color: '#B8C8B8' },
+        { id: 'sc_marketing', name: '市场活动', category: 'SC【必选】', required: true, color: '#B8C8B8' },
+        { id: 'sc_new_car', name: '新车', category: 'SC【必选】', required: true, color: '#B8C8B8' },
+        { id: 'sc_used_car', name: '易手车', category: 'SC【必选】', required: true, color: '#B8C8B8' },
+        { id: 'sc_old_customer_referral', name: '老客介绍', category: 'SC【必选】', required: true, color: '#B8C8B8' },
+        { id: 'sc_old_customer_repurchase', name: '老客重购', category: 'SC【必选】', required: true, color: '#B8C8B8' },
+        { id: 'sc_natural_flow', name: '自然客流', category: 'SC【必选】', required: true, color: '#B8C8B8' },
+        { id: 'sc_loan', name: '贷款', category: 'SC【必选】', required: true, color: '#B8C8B8' },
+        { id: 'sc_sales_invitation', name: '销售邀约', category: 'SC【必选】', required: true, color: '#B8C8B8' },
+        { id: 'sc_public_plate', name: '公牌', category: 'SC【必选】', required: true, color: '#B8C8B8' },
+        { id: 'sc_other', name: '其他', category: 'SC【必选】', required: true, color: '#B8C8B8' },
+        // SA【必选】- 灰紫色系
+        { id: 'sa_local', name: '本市', category: 'SA【必选】', required: true, color: '#D8C8E8' },
+        { id: 'sa_outside', name: '省内外市', category: 'SA【必选】', required: true, color: '#D8C8E8' },
+        { id: 'sa_private_plate', name: '私牌', category: 'SA【必选】', required: true, color: '#D8C8E8' },
+        // 续保【必选】- 灰粉色系
+        { id: 'insurance_picc', name: '人保', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        { id: 'insurance_life', name: '人寿', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        { id: 'insurance_expire_10', name: '保险到期月份-10月', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        { id: 'insurance_expire_11', name: '保险到期月份-11月', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        { id: 'insurance_expire_12', name: '保险到期月份-12月', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        { id: 'insurance_expire_1', name: '保险到期月份-1月', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        { id: 'insurance_expire_2', name: '保险到期月份-2月', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        { id: 'insurance_expire_3', name: '保险到期月份-3月', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        { id: 'insurance_expire_4', name: '保险到期月份-4月', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        { id: 'insurance_expire_5', name: '保险到期月份-5月', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        { id: 'insurance_expire_6', name: '保险到期月份-6月', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        { id: 'insurance_expire_7', name: '保险到期月份-7月', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        { id: 'insurance_expire_8', name: '保险到期月份-8月', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        { id: 'insurance_expire_9', name: '保险到期月份-9月', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        { id: 'insurance_other', name: '其他', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        { id: 'insurance_repair_not_insured', name: '在修不在保', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        { id: 'insurance_cpic', name: '太保', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        { id: 'insurance_pingan', name: '平安', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        { id: 'insurance_new', name: '新保', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        { id: 'insurance_renewal', name: '续保', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        { id: 'insurance_taiping', name: '太平', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        { id: 'insurance_dadi', name: '大地', category: '续保【必选】', required: true, color: '#E4C8C8' },
+        // POC【必选】- 灰黄色系
+        { id: 'poc_other', name: '其他评估', category: 'POC【必选】', required: true, color: '#E8D8B8' },
+        { id: 'poc_range', name: '区间报价', category: 'POC【必选】', required: true, color: '#E8D8B8' },
+        { id: 'poc_aftersales', name: '售后评估', category: 'POC【必选】', required: true, color: '#E8D8B8' },
+        { id: 'poc_precise', name: '精确报价', category: 'POC【必选】', required: true, color: '#E8D8B8' },
+        { id: 'poc_sales', name: '销售评估', category: 'POC【必选】', required: true, color: '#E8D8B8' },
+        // 免打扰车主 - 灰褐色系
+        { id: 'dnd_owner', name: '车主免打扰', category: '免打扰车主', color: '#D8C8B8' },
+        // 线上活动 - 灰蓝色系
+        { id: 'online_activity_aug', name: '8月再购活动抽奖', category: '线上活动', color: '#C8D5E0' },
+        // 爱好(≥1项) - 灰绿色系
+        { id: 'hobby_parent_child', name: '亲子', category: '爱好(≥1项)', minSelect: 1, color: '#C8D8C8' },
+        { id: 'hobby_wine', name: '品酒', category: '爱好(≥1项)', minSelect: 1, color: '#C8D8C8' },
+        { id: 'hobby_pet', name: '宠物', category: '爱好(≥1项)', minSelect: 1, color: '#C8D8C8' },
+        { id: 'hobby_trendy', name: '潮玩', category: '爱好(≥1项)', minSelect: 1, color: '#C8D8C8' },
+        { id: 'hobby_self_drive', name: '自驾游', category: '爱好(≥1项)', minSelect: 1, color: '#C8D8C8' },
+        { id: 'hobby_art', name: '艺术文化', category: '爱好(≥1项)', minSelect: 1, color: '#C8D8C8' },
+        { id: 'hobby_racing', name: '赛车', category: '爱好(≥1项)', minSelect: 1, color: '#C8D8C8' },
+        { id: 'hobby_sports', name: '运动', category: '爱好(≥1项)', minSelect: 1, color: '#C8D8C8' },
+        { id: 'hobby_golf', name: '高尔夫', category: '爱好(≥1项)', minSelect: 1, color: '#C8D8C8' },
       ]
     }
   }
@@ -203,6 +261,28 @@ export const useCustomerStore = defineStore('customer', () => {
       }
     } catch (error: any) {
       showToast(error.message || '删除失败，请重试')
+    } finally {
+      closeToast()
+    }
+  }
+
+  // 批量更新标签（一次性提交）
+  const updateTags = async (tags: string[]) => {
+    showLoadingToast({
+      message: '保存中...',
+      forbidClick: true,
+    })
+
+    try {
+      const res = await customerApi.updateTags(tags)
+      if (res.code === 200 && profile.value) {
+        // 使用新数组引用确保响应式更新
+        profile.value.tags = [...res.data.tags]
+        showToast('保存成功')
+      }
+    } catch (error: any) {
+      showToast(error.message || '保存失败，请重试')
+      throw error
     } finally {
       closeToast()
     }
@@ -600,6 +680,7 @@ export const useCustomerStore = defineStore('customer', () => {
     fetchOperationLogs,
     addTag,
     removeTag,
+    updateTags,
     updatePreferredCarModelTags,
     updateMaintenanceTags,
     submitNameMobileConflict,

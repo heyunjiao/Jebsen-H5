@@ -15,7 +15,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #f5f7fa;
+  background: #f7f8fa;
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -48,13 +48,13 @@ body {
 
 /* Vant 主题定制（汽车行业深蓝色/深灰色） */
 :root {
-  --van-primary-color: #1e3a8a;
-  --van-success-color: #10b981;
-  --van-warning-color: #f59e0b;
-  --van-danger-color: #ef4444;
-  --van-text-color: #323233;
-  --van-text-color-2: #646566;
-  --van-text-color-3: #969799;
+  --van-primary-color: #0052d9;
+  --van-success-color: #00a870;
+  --van-warning-color: #ed7b2f;
+  --van-danger-color: #e34d59;
+  --van-text-color: #1d2129;
+  --van-text-color-2: #4e5969;
+  --van-text-color-3: #86909c;
   --van-border-color: #ebedf0;
   --van-background-color: #f7f8fa;
 }

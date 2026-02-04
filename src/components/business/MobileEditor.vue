@@ -780,22 +780,23 @@ const emitUpdate = () => {
 .mobile-item {
   background: white;
   border-radius: 6px; // 减小圆角
-  padding: 8px 10px; // 减少内边距
-  margin-bottom: 6px; // 减少间距
+  padding: 12px 14px; // 增加内边距，突出号码显示
+  margin-bottom: 8px; // 增加间距，让号码更突出
 
   &:last-child {
     margin-bottom: 0;
   }
 
   &.is-primary {
-    border: 1px solid var(--van-tag-primary-color);
+    border: 2px solid var(--van-tag-primary-color); // 加粗主号边框
+    background: #f0f8ff; // 主号背景色
   }
 
   .mobile-item-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px; // 减少间距
+    margin-bottom: 10px; // 增加间距，让号码更突出
 
     .mobile-number {
       display: flex;
@@ -804,9 +805,10 @@ const emitUpdate = () => {
       flex: 1;
 
       .number {
-        font-size: 13px; // 进一步减小字体
-        font-weight: 600;
-        color: #323233;
+        font-size: 20px; // 放大电话号码显示
+        font-weight: 700;
+        color: #1a1a1a;
+        letter-spacing: 0.5px; // 增加字间距，提升可读性
       }
       
       .mobile-input-field {
@@ -814,7 +816,7 @@ const emitUpdate = () => {
         padding: 0;
         
         :deep(.van-field__control) {
-          font-size: 13px; // 减小字体
+          font-size: 18px; // 放大输入框字体
           font-weight: 600;
         }
       }
