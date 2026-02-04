@@ -310,11 +310,11 @@ const fetchRelationTagPool = async () => {
     console.warn('[MobileEditor] 获取关系标签池失败，使用默认标签:', error)
     // Fallback: 使用默认关系标签
     relationTagPool.value = [
-      { id: 'relation1', name: '本人', color: '#1989fa' },
+      { id: 'relation1', name: '本人', color: '#94724A' }, // 使用琥珀金
       { id: 'relation2', name: '配偶', color: '#ff6b9d' },
       { id: 'relation3', name: '父亲', color: '#52c41a' },
       { id: 'relation4', name: '母亲', color: '#52c41a' },
-      { id: 'relation5', name: '儿子', color: '#1890ff' },
+      { id: 'relation5', name: '儿子', color: '#B8865B' }, // 使用浅琥珀金
       { id: 'relation6', name: '女儿', color: '#eb2f96' },
       { id: 'relation7', name: '朋友', color: '#fa8c16' },
       { id: 'relation8', name: '同事', color: '#13c2c2' },
@@ -703,32 +703,41 @@ const emitUpdate = () => {
 
 <style scoped lang="scss">
 .mobile-editor {
-  padding: 12px; // 减少内边距
+  padding: 12px;
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #f7f8fa;
+  background: var(--bg-slate);
+  font-family: "Porsche Next", -apple-system, "PingFang SC", sans-serif;
 }
 
 .popup-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 10px; // 统一内边距
-  border-bottom: 1px solid #ebedf0;
-  margin-bottom: 12px; // 统一间距
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 0;
+  flex-shrink: 0;
 
   h3 {
     margin: 0;
-    font-size: 14px; // 统一标题字体大小
+    font-size: 14px;
     font-weight: 600;
-    color: #323233;
+    color: var(--text-main);
+    letter-spacing: -0.01em;
   }
 
   .van-icon {
-    font-size: 16px; // 统一图标大小
-    color: #969799;
+    font-size: 16px;
+    color: var(--text-sub);
     cursor: pointer;
+    padding: 4px;
+    transition: opacity 0.2s;
+    
+    &:active {
+      opacity: 0.7;
+    }
   }
 }
 
@@ -736,25 +745,32 @@ const emitUpdate = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 10px; // 统一内边距
-  border-bottom: 1px solid #ebedf0;
-  margin-bottom: 12px; // 统一间距
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 0;
+  flex-shrink: 0;
 
   h3 {
     margin: 0;
-    font-size: 14px; // 统一标题字体大小
+    font-size: 14px;
     font-weight: 600;
-    color: #323233;
+    color: var(--text-main);
     flex: 1;
     text-align: center;
+    letter-spacing: -0.01em;
   }
 
   .back-icon {
-    font-size: 16px; // 统一图标大小
-    color: #323233;
+    font-size: 16px;
+    color: var(--text-main);
     cursor: pointer;
-    padding: 3px; // 减少内边距
+    padding: 4px;
     flex-shrink: 0;
+    transition: opacity 0.2s;
+    
+    &:active {
+      opacity: 0.7;
+    }
   }
 }
 
@@ -779,17 +795,18 @@ const emitUpdate = () => {
 
 .mobile-item {
   background: white;
-  border-radius: 6px; // 减小圆角
-  padding: 12px 14px; // 增加内边距，突出号码显示
-  margin-bottom: 8px; // 增加间距，让号码更突出
+  border-radius: 4px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  border: 1px solid var(--border-color);
 
   &:last-child {
     margin-bottom: 0;
   }
 
   &.is-primary {
-    border: 2px solid var(--van-tag-primary-color); // 加粗主号边框
-    background: #f0f8ff; // 主号背景色
+    border: 2px solid var(--accent-gold);
+    background: #FCFAF6;
   }
 
   .mobile-item-header {
@@ -805,10 +822,11 @@ const emitUpdate = () => {
       flex: 1;
 
       .number {
-        font-size: 20px; // 放大电话号码显示
+        font-size: 18px;
         font-weight: 700;
-        color: #1a1a1a;
-        letter-spacing: 0.5px; // 增加字间距，提升可读性
+        color: var(--text-main);
+        letter-spacing: 0.3px;
+        font-family: "Monaco", "Menlo", "Consolas", monospace;
       }
       
       .mobile-input-field {
@@ -816,8 +834,10 @@ const emitUpdate = () => {
         padding: 0;
         
         :deep(.van-field__control) {
-          font-size: 18px; // 放大输入框字体
+          font-size: 18px;
           font-weight: 600;
+          color: var(--text-main);
+          font-family: "Monaco", "Menlo", "Consolas", monospace;
         }
       }
     }
@@ -830,18 +850,25 @@ const emitUpdate = () => {
       .action-icon {
         font-size: 18px;
         cursor: pointer;
+        transition: opacity 0.2s;
 
         &.edit-icon {
-          color: var(--van-tag-primary-color);
+          color: var(--accent-gold);
         }
 
         &.delete-icon {
-          color: #ee0a24;
+          color: #E53E3E;
+        }
+        
+        &:active {
+          opacity: 0.7;
         }
       }
       
       .van-button {
         min-width: 60px;
+        font-size: 12px !important;
+        height: 32px;
       }
     }
   }
@@ -851,14 +878,15 @@ const emitUpdate = () => {
     .business-tag-section {
       margin-bottom: 8px;
       padding: 12px;
-      background: #f7f8fa;
-      border-radius: 6px;
+      background: var(--bg-slate);
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
 
       .section-label {
-        font-size: 12px; // 减小字体
-        color: #323233;
+        font-size: 12px;
+        color: var(--text-main);
         font-weight: 500;
-        margin-bottom: 8px; // 减少间距
+        margin-bottom: 8px;
       }
 
       .tag-empty {
@@ -867,14 +895,14 @@ const emitUpdate = () => {
 
         .empty-text {
           font-size: 12px;
-          color: #969799;
+          color: var(--text-sub);
         }
       }
 
       .tag-options {
         display: flex;
         flex-wrap: wrap;
-        gap: 6px; // 减少间距
+        gap: 6px;
 
         .tag-option {
           cursor: pointer;
@@ -884,19 +912,19 @@ const emitUpdate = () => {
           align-items: center;
           border-radius: 4px;
           font-size: 12px;
-          padding: 2px 8px;
-          border: 1px solid #ebedf0 !important;
-          background: #ffffff !important;
-          color: #646566 !important;
+          padding: 4px 10px;
+          border: 1px solid var(--border-color) !important;
+          background: white !important;
+          color: var(--text-main) !important;
 
           &:hover {
-            border-color: var(--van-tag-primary-color) !important;
-            color: var(--van-tag-primary-color) !important;
+            border-color: var(--accent-gold) !important;
+            color: var(--accent-gold) !important;
           }
 
           &.tag-selected {
-            background: var(--van-tag-primary-color) !important;
-            border-color: var(--van-tag-primary-color) !important;
+            background: var(--accent-gold) !important;
+            border-color: var(--accent-gold) !important;
             color: #ffffff !important;
             font-weight: 500;
           }
@@ -916,28 +944,29 @@ const emitUpdate = () => {
     }
 
     .update-time {
-      font-size: 12px;
-      color: #969799;
+      font-size: 11px;
+      color: var(--text-sub);
       padding-left: 8px;
     }
   }
   
   // 新增表单
   &.edit-form-new {
-    border: 2px dashed var(--van-tag-primary-color);
-    background: #f0f8ff;
+    border: 2px dashed var(--accent-gold);
+    background: #FCFAF6;
   }
 }
 
 .number-type-selector-inline {
   margin-top: 12px;
   padding: 12px;
-  background: #f7f8fa;
-  border-radius: 6px;
+  background: var(--bg-slate);
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
   
   .selector-label {
-    font-size: 14px;
-    color: #323233;
+    font-size: 13px;
+    color: var(--text-main);
     font-weight: 500;
     margin-bottom: 8px;
   }
@@ -949,38 +978,41 @@ const emitUpdate = () => {
 }
 
 .action-buttons {
-  padding-top: 16px;
-  border-top: 1px solid #ebedf0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+  margin-top: auto;
 }
 
 .edit-content {
   flex: 1;
   overflow-y: auto;
-  padding-top: 16px;
+  padding-top: 12px;
 }
 
 .relation-selector {
-  margin-top: 12px; // 减少间距
-  padding: 10px 12px; // 减少内边距
-  background: #f7f8fa;
-  border-radius: 6px; // 减小圆角
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--bg-slate);
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
 
   .selector-label {
-    font-size: 12px; // 减小字体
-    color: #323233;
-    margin-bottom: 8px; // 减少间距
+    font-size: 12px;
+    color: var(--text-main);
+    margin-bottom: 8px;
     font-weight: 500;
     display: flex;
     align-items: center;
     gap: 8px;
 
     .label-hint {
-      font-size: 12px;
-      color: #969799;
+      font-size: 11px;
+      color: var(--text-sub);
       font-weight: normal;
 
       &.selected {
-        color: var(--van-tag-primary-color);
+        color: var(--accent-gold);
       }
     }
   }
@@ -992,7 +1024,7 @@ const emitUpdate = () => {
   .tag-options {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
 
     .tag-option {
       cursor: pointer;
@@ -1002,20 +1034,20 @@ const emitUpdate = () => {
       align-items: center;
       border-radius: 4px;
       font-size: 12px;
-      padding: 2px 8px;
-      border: 1px solid #ebedf0 !important;
-      background: #ffffff !important;
-      color: #646566 !important;
+      padding: 4px 10px;
+      border: 1px solid var(--border-color) !important;
+      background: white !important;
+      color: var(--text-main) !important;
 
       &:hover {
-        border-color: var(--van-tag-primary-color) !important;
-        color: var(--van-tag-primary-color) !important;
+        border-color: var(--accent-gold) !important;
+        color: var(--accent-gold) !important;
       }
 
       &.tag-selected {
-        background: var(--van-tag-primary-color) !important;
-        border-color: var(--van-tag-primary-color) !important;
-        color: #ffffff !important;
+        background: var(--accent-gold) !important;
+        border-color: var(--accent-gold) !important;
+        color: white !important;
         font-weight: 500;
       }
       
@@ -1034,15 +1066,16 @@ const emitUpdate = () => {
 }
 
 .number-type-selector {
-  margin-top: 12px; // 减少间距
-  padding: 10px 12px; // 减少内边距
-  background: #f7f8fa;
-  border-radius: 6px; // 减小圆角
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--bg-slate);
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
 
   .selector-label {
-    font-size: 12px; // 减小字体
-    color: #323233;
-    margin-bottom: 8px; // 减少间距
+    font-size: 12px;
+    color: var(--text-main);
+    margin-bottom: 8px;
     font-weight: 500;
   }
 
@@ -1056,8 +1089,8 @@ const emitUpdate = () => {
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 12px;
-    color: #969799;
+    font-size: 11px;
+    color: var(--text-sub);
 
     .van-icon {
       font-size: 14px;
@@ -1067,25 +1100,31 @@ const emitUpdate = () => {
 
 .edit-actions {
   display: flex;
-  gap: 12px;
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px solid #ebedf0;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
 
   .van-button {
     flex: 1;
+    font-size: 14px !important;
+    height: 40px;
   }
 }
 
 .edit-actions-inline {
   display: flex;
-  gap: 12px;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #ebedf0;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
 
   .van-button {
     flex: 1;
+    font-size: 14px !important;
+    height: 40px;
   }
 }
 

@@ -79,7 +79,7 @@ const mockCustomerProfile: CustomerProfile = {
     value: '8次保养，2次维修',
     isConflict: false,
   },
-  tags: ['热', 'PMP邀约', '本市', '人保', '精确报价', '亲子', '品酒'],
+  tags: ['VIP 车主', '热', 'PMP邀约', '本市', '人保', '精确报价', '亲子', '品酒'],
   // 新增字段
   opportunityType: {
     value: '钻石客户',
@@ -583,6 +583,19 @@ try {
 // Mock 商机信息数据
 const mockOpportunities: Opportunity[] = [
   {
+    id: 'OPP000',
+    oneId: 'ONE-202501000',
+    type: '钻石客户',
+    triggerRule: '高价值客户识别规则',
+    priority: '高',
+    status: '待处理',
+    pushTarget: 'crm',
+    pushStatus: '待推送',
+    createTime: '2025-01-16 10:00:00',
+    description: '客户等级：钻石\n累计消费：¥1,456,200\n客户价值：极高',
+    source: 'CRM',
+  },
+  {
     id: 'OPP001',
     oneId: 'ONE-202501001',
     type: '首保流失15个月',
@@ -598,7 +611,7 @@ const mockOpportunities: Opportunity[] = [
   {
     id: 'OPP002',
     oneId: 'ONE-202501002',
-    type: 'PCN售后',
+    type: 'PCN 售后增项',
     triggerRule: 'PCN售后活动规则',
     priority: '高',
     status: '处理中',

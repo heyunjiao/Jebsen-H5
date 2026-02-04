@@ -103,31 +103,40 @@ const getOperationTypeTagType = (type: string): any => {
 
 <style scoped lang="scss">
 .operation-log-dialog {
-  padding: 12px; // 减少内边距
+  padding: 12px;
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #f7f8fa;
+  background: var(--bg-slate);
+  font-family: "Porsche Next", -apple-system, "PingFang SC", sans-serif;
 
   .popup-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 10px; // 统一内边距
-    border-bottom: 1px solid #ebedf0;
-    margin-bottom: 12px; // 统一间距
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 0;
+    flex-shrink: 0;
 
     h3 {
       margin: 0;
-      font-size: 14px; // 统一标题字体大小
+      font-size: 14px;
       font-weight: 600;
-      color: #323233;
+      color: var(--text-main);
+      letter-spacing: -0.01em;
     }
 
     .van-icon {
-      font-size: 16px; // 统一图标大小
-      color: #969799;
+      font-size: 16px;
+      color: var(--text-sub);
       cursor: pointer;
+      padding: 4px;
+      transition: opacity 0.2s;
+      
+      &:active {
+        opacity: 0.7;
+      }
     }
   }
 
@@ -146,86 +155,89 @@ const getOperationTypeTagType = (type: string): any => {
     .logs-list {
       display: flex;
       flex-direction: column;
-      gap: 6px; // 减少间距
+      gap: 6px;
+      padding-top: 10px;
 
       .log-item {
         background: white;
-        border-radius: 6px; // 减小圆角
-        padding: 10px 12px; // 减少内边距
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06); // 减小阴影
+        border-radius: 4px;
+        padding: 10px 12px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+        border: 1px solid var(--border-color);
 
         .log-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 8px; // 减少间距
+          margin-bottom: 8px;
 
           .log-operator {
             display: flex;
             align-items: center;
-            gap: 5px; // 减少间距
+            gap: 6px;
 
             .operator-icon {
-              font-size: 14px; // 减小图标
-              color: #1989fa;
+              font-size: 14px;
+              color: var(--accent-gold);
             }
 
             .operator-name {
-              font-size: 13px; // 减小字体
+              font-size: 13px;
               font-weight: 600;
-              color: #323233;
+              color: var(--text-main);
             }
           }
 
           .log-time {
-            font-size: 11px; // 减小字体
-            color: #969799;
+            font-size: 11px;
+            color: var(--text-sub);
           }
         }
 
         .log-type {
-          margin-bottom: 6px; // 减少间距
+          margin-bottom: 6px;
         }
 
         .log-description {
-          font-size: 12px; // 减小字体
-          color: #646566;
-          line-height: 1.4; // 优化行高
-          margin-bottom: 8px; // 减少间距
+          font-size: 12px;
+          color: var(--text-main);
+          line-height: 1.3;
+          margin-bottom: 6px;
         }
 
         .log-details {
-          padding: 8px 10px; // 减少内边距
-          background: #f7f8fa;
-          border-radius: 4px; // 减小圆角
+          padding: 8px 10px;
+          background: var(--bg-slate);
+          border-radius: 4px;
           display: flex;
           flex-direction: column;
-          gap: 6px; // 减少间距
+          gap: 4px;
+          border: 1px solid var(--border-color);
 
           .detail-item {
             display: flex;
-            font-size: 11px; // 减小字体
-            line-height: 1.3; // 优化行高
+            font-size: 11px;
+            line-height: 1.4;
 
             .detail-label {
-              color: #969799;
+              color: var(--text-sub);
               min-width: 70px;
               flex-shrink: 0;
             }
 
             .detail-value {
-              color: #323233;
+              color: var(--text-main);
               flex: 1;
               word-break: break-all;
 
               &.old-value {
                 text-decoration: line-through;
-                color: #969799;
+                color: var(--text-sub);
               }
 
               &.new-value {
-                color: #1989fa;
-                font-weight: 500;
+                color: var(--accent-gold);
+                font-weight: 600;
               }
             }
           }

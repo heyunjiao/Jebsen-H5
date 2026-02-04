@@ -160,38 +160,48 @@ const getLabel = (key: string): string => {
 
 <style scoped lang="scss">
 .platform-flow {
-  padding: 12px; // 减少内边距
+  padding: 12px;
   height: 100%;
   display: flex;
   flex-direction: column;
+  background: var(--bg-slate);
+  font-family: "Porsche Next", -apple-system, "PingFang SC", sans-serif;
 }
 
 .popup-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 10px; // 统一内边距
-  border-bottom: 1px solid #ebedf0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
+  margin-bottom: 0;
 
   h3 {
     margin: 0;
-    font-size: 14px; // 统一标题字体大小
+    font-size: 14px;
     font-weight: 600;
-    color: #323233;
+    color: var(--text-main);
+    letter-spacing: -0.01em;
   }
 
   .van-icon {
-    font-size: 16px; // 统一图标大小
-    color: #969799;
+    font-size: 16px;
+    color: var(--text-sub);
     cursor: pointer;
+    padding: 4px;
+    transition: opacity 0.2s;
+    
+    &:active {
+      opacity: 0.7;
+    }
   }
 }
 
 .popup-content {
   flex: 1;
   overflow-y: auto;
-  padding-top: 12px; // 减少内边距
+  padding-top: 10px;
 }
 
 // OneID 区域
@@ -199,10 +209,10 @@ const getLabel = (key: string): string => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px; // 减少间距
-  margin-bottom: 12px; // 减少间距
-  padding-bottom: 12px; // 减少内边距
-  border-bottom: 1px solid #ebedf0;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
 
   .oneid-node {
     display: flex;
@@ -211,23 +221,24 @@ const getLabel = (key: string): string => {
     gap: 6px;
 
     .oneid-box {
-      background: #e8f4ff;
-      border-radius: 6px;
-      padding: 8px 16px;
-      border: 1px solid #b3d8ff;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+      background: #FCFAF6;
+      border-radius: 4px;
+      padding: 10px 20px;
+      border: 1px solid var(--accent-gold);
+      box-shadow: 0 1px 2px rgba(148, 114, 74, 0.1);
 
       .oneid-id {
         font-size: 13px;
-        font-weight: 600;
-        color: #1989fa;
+        font-weight: 700;
+        color: var(--accent-gold);
         letter-spacing: 0.3px;
+        font-family: "Monaco", "Menlo", "Consolas", monospace;
       }
     }
 
     .oneid-label {
-      font-size: 12px;
-      color: #666;
+      font-size: 11px;
+      color: var(--text-sub);
       font-weight: 500;
       margin-top: 2px;
     }
@@ -237,7 +248,7 @@ const getLabel = (key: string): string => {
     display: flex;
     justify-content: center;
     align-items: center;
-    color: #1989fa;
+    color: var(--accent-gold);
     font-size: 18px;
     padding: 4px 0;
     font-weight: bold;
@@ -255,32 +266,33 @@ const getLabel = (key: string): string => {
 // 平台卡片
 .platform-card {
   position: relative;
-  background: #f5f5f5;
+  background: white;
   border-radius: 4px;
-  padding: 6px 4px;
+  padding: 8px 6px;
   cursor: pointer;
   transition: all 0.2s;
-  border: 1.5px solid transparent;
+  border: 1px solid var(--border-color);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 36px;
+  min-height: 40px;
 
   // 未选择时都是灰色
   &:not(.is-active) {
-    background: #f5f5f5;
+    background: var(--bg-slate);
     
     .platform-name {
-      color: #969799;
+      color: var(--text-sub);
     }
   }
 
   &.is-active {
-    background: #e8f4ff;
-    border-color: #1989fa;
-    box-shadow: 0 2px 8px rgba(25, 137, 250, 0.3);
+    background: #FCFAF6;
+    border-color: var(--accent-gold);
+    border-width: 2px;
+    box-shadow: 0 2px 8px rgba(148, 114, 74, 0.2);
     transform: translateY(-2px);
   }
 
@@ -291,104 +303,125 @@ const getLabel = (key: string): string => {
   .platform-name {
     font-size: 11px;
     font-weight: 600;
-    color: #969799;
+    color: var(--text-sub);
     text-align: center;
     transition: all 0.2s;
     line-height: 1.2;
   }
 
   &.is-active .platform-name {
-    color: #1989fa;
+    color: var(--accent-gold);
   }
 
   .platform-check {
     position: absolute;
-    top: 1px;
-    right: 1px;
-    width: 14px;
-    height: 14px;
-    background: #1989fa;
+    top: 2px;
+    right: 2px;
+    width: 16px;
+    height: 16px;
+    background: var(--accent-gold);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
-    font-size: 9px;
+    color: white;
+    font-size: 10px;
   }
 }
 
 // 平台详情（页面内显示）
 .source-detail {
-  margin-top: 12px; // 减少间距
-  padding: 10px 12px; // 减少内边距
-  background: #f7f8fa;
-  border-radius: 6px; // 减小圆角
-  border: 1px solid #ebedf0;
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
 
   .detail-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px; // 减少间距
-    padding-bottom: 8px; // 减少内边距
-    border-bottom: 1px solid #ebedf0;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
 
     h4 {
       margin: 0;
-      font-size: 13px; // 减小字体
+      font-size: 13px;
       font-weight: 600;
-      color: #323233;
+      color: var(--text-main);
     }
 
     .van-icon {
-      font-size: 16px; // 减小图标
-      color: #969799;
+      font-size: 16px;
+      color: var(--text-sub);
       cursor: pointer;
+      padding: 4px;
+      transition: opacity 0.2s;
+      
+      &:active {
+        opacity: 0.7;
+      }
     }
   }
 
   .detail-content {
     .detail-row {
       display: flex;
-      padding: 6px 0; // 减少内边距
-      font-size: 12px; // 减小字体
-      line-height: 1.3; // 优化行高
-      border-bottom: 1px solid #ebedf0;
+      padding: 6px 0;
+      font-size: 12px;
+      line-height: 1.3;
+      border-bottom: 1px solid var(--border-color);
 
       &:last-child {
         border-bottom: none;
       }
 
       .detail-label {
-        color: #969799;
-        min-width: 75px; // 减少最小宽度
+        color: var(--text-sub);
+        min-width: 75px;
         flex-shrink: 0;
-        font-size: 12px; // 减小字体
+        font-size: 12px;
       }
 
       .detail-value {
-        color: #323233;
+        color: var(--text-main);
         font-weight: 500;
         flex: 1;
         text-align: right;
-        font-size: 12px; // 减小字体
+        font-size: 12px;
       }
     }
 
     .detail-divider {
       height: 1px;
-      background: #ebedf0;
-      margin: 10px 0; // 减少间距
+      background: var(--border-color);
+      margin: 12px 0;
     }
 
     .detail-section-title {
-      font-size: 12px; // 减小字体
+      font-size: 12px;
       font-weight: 600;
-      color: #323233;
-      margin-bottom: 8px; // 减少间距
-      padding-bottom: 6px; // 减少内边距
-      border-bottom: 2px solid #1989fa;
+      color: var(--text-main);
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--accent-gold);
     }
+  }
+}
+
+.popup-footer {
+  display: flex;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+  margin-top: auto;
+
+  .van-button {
+    flex: 1;
+    font-size: 14px !important;
+    height: 40px;
   }
 }
 </style>

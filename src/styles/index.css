@@ -46,16 +46,51 @@ body {
   background: #a8a8a8;
 }
 
-/* Vant 主题定制（汽车行业深蓝色/深灰色） */
+/* 统一弹出层按钮字体大小 */
+.van-popup {
+  .van-button {
+    &[size="large"] {
+      font-size: 14px !important;
+      height: 40px;
+    }
+    
+    &[size="normal"],
+    &[size="default"] {
+      font-size: 14px !important;
+    }
+    
+    &[size="small"] {
+      font-size: 12px !important;
+    }
+    
+    &[size="mini"] {
+      font-size: 12px !important;
+      height: 32px;
+    }
+  }
+}
+
+/* Vant 主题定制（保时捷美学风格 - 琥珀金主题） */
 :root {
-  --van-primary-color: #0052d9;
+  /* Vant 组件主题色 - 使用琥珀金替代深蓝色 */
+  --van-primary-color: var(--accent-gold);
   --van-success-color: #00a870;
   --van-warning-color: #ed7b2f;
   --van-danger-color: #e34d59;
-  --van-text-color: #1d2129;
-  --van-text-color-2: #4e5969;
-  --van-text-color-3: #86909c;
-  --van-border-color: #ebedf0;
-  --van-background-color: #f7f8fa;
+  --van-text-color: var(--text-main);
+  --van-text-color-2: var(--text-sub);
+  --van-text-color-3: var(--text-sub);
+  --van-border-color: var(--border-color);
+  --van-background-color: var(--bg-slate);
+  
+  /* C360 Elite Dashboard 设计规范颜色变量 */
+  --porsche-black: #0F1113;
+  --accent-gold: #94724A;
+  --bg-slate: #F8FAFC;
+  --text-main: #1E293B;
+  --text-sub: #64748B;
+  --border-color: #E2E8F0;
+  --alert-blue: #2563EB;
+  --alert-orange: #B45309;
 }
 

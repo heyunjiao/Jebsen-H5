@@ -1,39 +1,27 @@
 <template>
   <div class="home-container">
-    <!-- 冲突提示（最顶部优先显示） -->
-    <div
-      v-if="customerStore.profile?.nameMobileConflict && customerStore.profile.nameMobileConflict.length > 0"
-      class="conflict-alert-top"
-    >
-      <van-notice-bar
-        left-icon="info-o"
-        color="#d46b08"
-        background="#fff7e6"
-        scrollable
-        :speed="50"
+    <!-- 顶部状态栏系统 -->
+    <div class="alert-system">
+      <!-- 冲突提示（最顶部优先显示） -->
+      <div
+        v-if="customerStore.profile?.nameMobileConflict && customerStore.profile.nameMobileConflict.length > 0"
+        class="alert-item alert-orange conflict-alert-top"
         @click="showConflictResolver = true"
-        style="cursor: pointer;"
       >
-      该顾客疑似存在多条记录，请立即点击更新！
-      </van-notice-bar>
-    </div>
+        <span>⚠️ 该顾客疑似存在多条记录冲突，请核实身份信息</span>
+      </div>
 
-    <!-- 最新操作这个客户的信息提示，点击弹窗显示操作日志 -->
-    <div
-      v-if="latestOperationText || customerStore.profile?.latestOperation"
-      class="operation-alert"
-    >
-      <van-notice-bar
-        left-icon="info-o"
-        :color="'var(--van-tag-primary-color)'"
-        background="#e6f7ff"
-        scrollable
-        :speed="50"
+      <!-- 最新操作这个客户的信息提示，点击弹窗显示操作日志 -->
+      <div
+        v-if="latestOperationText || customerStore.profile?.latestOperation"
+        class="alert-item alert-blue operation-alert"
         @click="showOperationLogDialog = true"
-        style="cursor: pointer;"
       >
-        <span>{{ latestOperationText || '该顾客已被 Rebecca Z. 人工更新 （2024年01月15日）' }}</span>
-      </van-notice-bar>
+        <span>ℹ️ {{ latestOperationText || '该顾客已被 Rebecca Z. 人工更新' }}</span>
+        <span v-if="customerStore.profile?.latestOperation?.operationTime">
+          {{ formatOperationTime(customerStore.profile.latestOperation.operationTime) }} ›
+        </span>
+      </div>
     </div>
 
 
@@ -46,247 +34,184 @@
         </span> -->
     <!-- 首屏内容 -->
     <div v-if="!customerStore.loading && customerStore.profile" class="first-screen">
-      <!-- 1. 姓名、电话和商机信息合并 -->
-      <div class="info-card name-card">
-        <div class="name-section">
-          <div class="name-row">
-            <div class="name-with-icon">
-              <span class="name-text">{{ customerStore.profile.name?.value || 'XX' }}</span>
-              <van-icon 
-                name="info-o" 
-                class="source-icon"
-                @click="showPlatformFlow = true"
-              />
-            </div>
-            <div class="name-row-right">
-              <div class="customer-id">
-                <span class="id-label">客户ID：</span>
-                <span class="id-value">{{ customerStore.profile.id }}</span>
-              </div>
-              <div class="identity-badge">
-                <van-icon 
-                  :name="customerTypeIcon" 
-                  class="identity-icon"
-                  :class="{ 'is-company': isCompany }"
-                />
-                <span class="identity-text">{{ customerTypeText }}</span>
-              </div>
-            </div>
+      <!-- 沉浸式头部：带 Jebsen 水印 -->
+      <div class="premium-header">
+        <div class="header-main">
+          <div class="user-name-row">
+            <h1>{{ customerStore.profile.name?.value || 'XX' }}</h1>
+            <span class="oneid-pill">ONEID：{{ customerStore.profile.id }}</span>
+            <span v-if="customerStore.profile?.customerType?.value" class="customer-type-badge">
+              {{ customerStore.profile.customerType.value === '个人' ? '个人' : customerStore.profile.customerType.value === '公司' ? '公司' : String(customerStore.profile.customerType.value) }}
+            </span>
           </div>
         </div>
-        
-        <div class="card-content-wrapper">
-          <!-- 电话部分 -->
-          <div class="phone-section">
+        <div class="header-tags">
+          <span 
+            v-for="(tag, index) in displayedHeaderTags" 
+            :key="index"
+            :class="getHeaderTagClass(tag)"
+          >
+            {{ tag }}
+          </span>
+        </div>
+      </div>
+
+      <!-- 手机号区域：极致负边距嵌入头部 -->
+      <div class="phone-card">
+        <div class="phone-entry">
+          <div
+            v-for="(item, index) in displayedPhones"
+            :key="item.id"
+          >
             <div class="phone-row">
-              <Phone :size="14" class="phone-icon" />
-              <span class="section-title">电话：</span>
-              <div class="phone-list">
-                <div
-                  v-for="(item, index) in displayedPhones"
-                  :key="item.id"
-                  class="phone-item"
-                  :class="{ 'is-primary': item.isPrimary }"
-                >
-                  <span class="phone-number">{{ item.mobile }}</span>
-                  <van-tag v-if="item.isPrimary" type="primary" :size="'small' as any" class="tag-primary">主号</van-tag>
-                  <!-- 业务标签显示（车主、送修人） -->
+              <div class="num-group">
+                <span class="num-val" :class="{ 'is-secondary': !item.isPrimary }">
+                  {{ item.formattedMobile || formatMobile(item.mobile) }}
+                </span>
+                <div class="num-tags">
+                  <span v-if="item.isPrimary" class="n-tag active">主号</span>
                   <template v-if="item.businessTags && item.businessTags.length > 0">
-                    <van-tag
+                    <span
                       v-for="(businessTag, tagIndex) in item.businessTags"
                       :key="tagIndex"
-                      :type="getBusinessTagType(businessTag)"
-                      plain
-                      :size="'small' as any"
-                      class="tag-business"
+                      class="n-tag"
+                      :class="{ 'active': businessTag === '车主' }"
                     >
                       {{ businessTag }}
-                    </van-tag>
+                    </span>
                   </template>
-                  <!-- 关系标签在首屏不展示 -->
+                  <!-- 显示关系标签（如"送"、"送修人"、"配偶"） -->
+                  <span v-if="item.relationTagName && !item.isPrimary" class="n-tag">
+                    {{ item.relationTagName }}
+                  </span>
                 </div>
-                <van-button
-                  v-if="hasMorePhones"
-                  type="primary"
-                  size="mini"
-                  plain
-                  @click="showMobileManager = true"
-                  class="more-phone-btn"
-                >
-                  更多
-                </van-button>
               </div>
+              <span 
+                v-if="item.isPrimary && customerStore.profile.mobile && 'items' in customerStore.profile.mobile && customerStore.profile.mobile.editable"
+                class="edit-icon"
+                @click="showMobileManager = true"
+              >✏️</span>
             </div>
-          </div>
-          <!-- 商机信息部分 -->
-          <div class="opportunity-section" v-if="opportunityTypeList.length > 0">
-            <div class="opportunity-row">
-              <span class="section-title">商机信息：</span>
-              <div class="opportunity-types" @click="showOpportunityDialog = true">
-                <van-tag
-                  v-for="(type, index) in opportunityTypeList"
-                  :key="index"
-                  :type="getOpportunityTypeTagType(type)"
-                  size="medium"
-                
-                >
-                  {{ type }}
-                </van-tag>
-              </div>
-            </div>
+            <!-- 分隔线：在两个手机号之间显示 -->
+            <div v-if="index < displayedPhones.length - 1" style="height: 1px; background: #F1F5F9; margin: 4px 0;"></div>
           </div>
         </div>
       </div>
 
-      <!-- 3. 车辆信息（显示2辆，确保在第一屏显示） -->
-      <div class="info-card vehicle-card">
-        <div class="card-header">
-          <div class="card-title">
-            <CarFront :size="16" class="title-icon" />
-            车辆信息
-          </div>
-          <van-button
-            v-if="customerStore.vehicles.length > 2"
-            type="primary"
-            size="mini"
-            plain
-            @click="showVehicleDialog = true"
-          >
-            查看全部
-          </van-button>
+      <!-- 资产档案（车辆信息） -->
+      <div class="container">
+        <div class="block-h">
+          <span class="title-text">旗下资产 ({{ customerStore.vehicles.length }})</span>
+          <span class="block-more" @click="showVehicleDialog = true">查看更多 ›</span>
         </div>
-        <div class="vehicle-list">
+        <div class="asset-box">
           <div
             v-for="vehicle in displayedVehicles"
             :key="vehicle.id"
-            class="vehicle-item"
+            class="asset-row"
           >
-            <div class="vehicle-header">
-              <div class="vehicle-main-info">
-                <CarFront :size="16" class="vehicle-icon" />
-                <div class="vehicle-info-wrapper">
-                  <div class="vehicle-info-row">
-                    <span class="vehicle-model">{{ vehicle.vehicleModel }}</span>
-                    <span class="info-value plate-number">{{ vehicle.licensePlate || '未知' }}</span>
-                    <span class="info-value">{{ vehicle.vin || '未知' }}</span>
-                    <div class="vehicle-status-wrapper" @click="openVehicleStatusSheet(vehicle.id)">
-                      <van-tag
-                        :type="getVehicleStatusType(vehicle.status)"
-                        :size="'small' as any"
-                        class="status-tag-clickable"
-                      >
-                        {{ vehicle.status }}
-                      </van-tag>
-                      <van-icon name="arrow-down" class="status-arrow-icon" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <van-action-sheet
-                v-model:show="vehicleStatusSheets[vehicle.id]"
-                :actions="vehicleStatusOptions"
-                @select="(action: any) => handleVehicleStatusChange(vehicle.id, action.value)"
-                cancel-text="取消"
-              />
-            </div>
+            <span class="model-name ellipsis">{{ vehicle.vehicleModel }}</span>
+            <span class="plate-val ellipsis">{{ vehicle.licensePlate || '未知' }}</span>
+            <span class="vin-val ellipsis">{{ vehicle.vin || '未知' }}</span>
+            <span 
+              class="status-text"
+              @click="openVehicleStatusSheet(vehicle.id)"
+            >{{ vehicle.status }}</span>
+            <van-action-sheet
+              v-model:show="vehicleStatusSheets[vehicle.id]"
+              :actions="vehicleStatusOptions"
+              @select="(action: any) => handleVehicleStatusChange(vehicle.id, action.value)"
+              cancel-text="取消"
+            />
           </div>
         </div>
       </div>
 
-      <!-- 4. 最近到期优惠券 -->
-      <div 
-        v-if="nearestExpiringAsset" 
-        class="info-card coupon-card"
-        @click="handleCouponCardClick"
-      >
-        <div class="coupon-header">
-          <div class="coupon-title">
-            <Ticket :size="16" class="title-icon" />
-            {{ nearestExpiringAsset.name }}
-          </div>
-          <van-icon name="arrow" class="arrow-icon" />
+      <!-- 账户权益 -->
+      <div class="container" v-if="nearestExpiringAsset">
+        <div class="block-h">
+          <span class="title-text">账户权益</span>
+          <span class="block-more" @click="handleCouponCardClick">查看更多 ›</span>
         </div>
-        <div class="coupon-info">
-          <div class="coupon-row">
-            <span class="label">到期日期：</span>
-            <span class="value">{{ nearestExpiringAsset.validTo }}</span>
+        <div class="asset-coupon-box">
+          <div class="asset-coupon-name">{{ nearestExpiringAsset.name }} <small>至 {{ nearestExpiringAsset.validTo }}</small></div>
+          <div class="asset-coupon-amount">¥{{ formatAmount(nearestExpiringAsset.amount || 0) }}</div>
+        </div>
+      </div>
+
+      <!-- 画像标签 -->
+      <div class="container">
+        <div class="block-h">
+          <span class="title-text">画像标签</span>
+          <span class="block-more" @click="showTagManager = true">编辑标签 ›</span>
+        </div>
+        <div class="tags-list-container">
+          <span
+            v-for="(tag, index) in customerStore.profile.tags"
+            :key="index"
+            class="tag-item-custom"
+            :class="getTagCustomClass(tag)"
+            :style="getTagStyle(tag)"
+            @click="showTagManager = true"
+          >
+            {{ tag }}
+          </span>
+          <span v-if="customerStore.profile.tags.length === 0" class="empty-tags-text">暂无标签</span>
+        </div>
+      </div>
+
+      <!-- 基础档案 -->
+      <div class="container">
+        <div class="block-h">
+          <span class="title-text">基础档案</span>
+        </div>
+        <div class="info-grid">
+          <div class="info-node">
+            <div class="node-l">姓名</div>
+            <div class="node-v">{{ customerStore.profile.name.value || '未知' }}</div>
           </div>
-          <div class="coupon-row">
-            <span class="label">金额：</span>
-            <span class="value amount">¥{{ formatAmount(nearestExpiringAsset.amount || 0) }}</span>
+          <div class="info-node">
+            <div class="node-l">年龄</div>
+            <div class="node-v">{{ customerStore.profile.age.value || '未知' }}</div>
+          </div>
+          <div class="info-node">
+            <div class="node-l">性别</div>
+            <div class="node-v">{{ customerStore.profile.gender.value || '未知' }}</div>
+          </div>
+          <div class="info-node">
+            <div class="node-l">城市</div>
+            <div class="node-v">{{ customerStore.profile.city.value || '未知' }}</div>
           </div>
         </div>
       </div>
 
-      <!-- 5. 标签信息 -->
-      <div class="info-card tags-card">
-        <div class="card-header">
-          <div class="card-title">
-            <Tag :size="16" class="title-icon" />
-            客户标签
-          </div>
-        </div>
-        <div class="tags-content">
-          <div v-if="customerStore.profile.tags.length > 0" class="tags-list">
-            <van-tag
-              v-for="(tag, index) in customerStore.profile.tags"
-              :key="index"
-              :type="getTagInfo(tag).type"
-              :style="getTagInfo(tag).color ? { backgroundColor: getTagInfo(tag).color, borderColor: getTagInfo(tag).color, color: '#666' } : {}"
-              size="medium"
-              :class="['tag-item', 'clickable-tag', getTagInfo(tag).className]"
-              @click="showTagManager = true"
-            >
-              {{ tag }}
-            </van-tag>
-          </div>
-          <div v-else class="empty-tags">暂无标签</div>
-        </div>
-      </div>
-
-      <!-- 6. 基本信息块（移到车辆信息之后） -->
-      <div class="info-card basic-info-card">
-        <div class="card-header">
-          <div class="card-title">
-            <UserCircle :size="16" class="title-icon" />
-            基本信息
-          </div>
-          <van-button
-            type="primary"
-            size="mini"
-            plain
-            @click="handleOpenBasicInfoEditor"
-            class="edit-btn"
+      <!-- Tab 切换（维保、保险） -->
+      <div class="container tab-container">
+        <div class="tab-nav-wrapper">
+          <div 
+            class="tab-nav-item" 
+            :class="{ active: activeTab === 'maintenance' }"
+            @click="activeTab = 'maintenance'"
           >
-            <Edit2 :size="14" class="edit-icon" />
-            编辑
-          </van-button>
-        </div>
-        <div class="basic-info-grid">
-          <div class="info-grid-item">
-            <span class="info-label">姓名</span>
-            <span class="info-value">{{ customerStore.profile.name.value || '未知' }}</span>
+            维保记录
           </div>
-          <div class="info-grid-item">
-            <span class="info-label">年龄</span>
-            <span class="info-value">{{ customerStore.profile.age.value || '未知' }}</span>
-          </div>
-          <div class="info-grid-item">
-            <span class="info-label">性别</span>
-            <span class="info-value">{{ customerStore.profile.gender.value || '未知' }}</span>
-          </div>
-          <div class="info-grid-item">
-            <span class="info-label">城市</span>
-            <span class="info-value">{{ customerStore.profile.city.value || '未知' }}</span>
-          </div>
-          <!-- <div
-            v-if="customerStore.profile?.customerType"
-            class="info-grid-item"
-            style="grid-column: 1 / -1;"
+          <div 
+            class="tab-nav-item" 
+            :class="{ active: activeTab === 'insurance' }"
+            @click="activeTab = 'insurance'"
           >
-            <span class="info-label">客户类型</span>
-            <span class="info-value">{{ customerStore.profile.customerType.value || '未知' }}</span>
-          </div> -->
+            保险合同
+          </div>
+        </div>
+        
+        <!-- Tab 内容 -->
+        <div class="tab-content-wrapper">
+          <div v-if="activeTab === 'maintenance'" class="tab-content">
+            <MaintenanceRecords />
+          </div>
+          <div v-if="activeTab === 'insurance'" class="tab-content">
+            <Maintenance />
+          </div>
         </div>
       </div>
     </div>
@@ -300,16 +225,6 @@
     >
       加载中...
     </van-loading>
-
-    <!-- Tab 切换（维保、保险） -->
-    <van-tabs v-model:active="activeTab" class="main-tabs">
-      <van-tab title="维保" name="maintenance">
-        <MaintenanceRecords />
-      </van-tab>
-      <van-tab title="保险" name="insurance">
-        <Maintenance />
-      </van-tab>
-    </van-tabs>
 
     <!-- 预约信息卡片（提前显示，业务人员重点关注） -->
     <!-- <div v-if="customerStore.appointments && customerStore.appointments.length > 0 && !customerStore.loading" class="appointment-card-top">
@@ -916,13 +831,29 @@ const customerTypeIcon = computed(() => {
   return isCompany.value ? 'shop-o' : 'user-o'
 })
 
+// 格式化手机号：13800138000 -> 138 0013 8000
+const formatMobile = (mobile: string): string => {
+  if (!mobile) return ''
+  // 移除所有空格
+  const cleaned = mobile.replace(/\s/g, '')
+  // 如果是11位数字，格式化为 138 0013 8000
+  if (/^\d{11}$/.test(cleaned)) {
+    return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 7)} ${cleaned.slice(7)}`
+  }
+  // 否则保持原样
+  return mobile
+}
+
 // 电话相关
 const displayedPhones = computed(() => {
   if (!customerStore.profile?.mobile || !('items' in customerStore.profile.mobile)) {
     return []
   }
   const items = (customerStore.profile.mobile as MobileData).items
-  return items.slice(0, 2) // 只显示前2个
+  return items.slice(0, 2).map(item => ({
+    ...item,
+    formattedMobile: formatMobile(item.mobile)
+  })) // 只显示前2个，并格式化手机号
 })
 
 const hasMorePhones = computed(() => {
@@ -981,6 +912,128 @@ const displayedVehicles = computed(() => {
   return customerStore.vehicles.slice(0, 2)
 })
 
+// 头部标签：显示客户类型 + 钻石客户 + VIP 车主 + 所有商机类型
+const displayedHeaderTags = computed(() => {
+  const tags: string[] = []
+  
+  // 1. 添加 VIP 车主（如果 tags 中存在）
+  if (customerStore.profile?.tags?.some(tag => tag.includes('VIP') && tag.includes('车主'))) {
+    tags.push('VIP 车主')
+  }
+  
+  // 2. 添加所有商机类型（包括钻石客户）
+  if (customerStore.opportunities && customerStore.opportunities.length > 0) {
+    const opportunityTypes = customerStore.opportunities.map(opp => opp.type)
+    tags.push(...opportunityTypes)
+  }
+  
+  // 去重，确保每个标签只显示一次
+  return Array.from(new Set(tags))
+})
+
+// 获取头部标签的样式类（商机类型）
+const getHeaderTagClass = (tag: string) => {
+  // VIP 车主和钻石客户使用 vip-tag 样式（琥珀金实色背景，黑色文字）
+  if ((tag.includes('VIP') && tag.includes('车主')) || tag === '钻石客户') {
+    return 'vip-tag'
+  }
+  // 客户类型（个人客户、公司客户）和其他所有商机类型使用 biz-badge 样式（深灰半透明背景，白色文字）
+  return 'biz-badge'
+}
+
+// 获取标签的自定义样式类
+// 将颜色转换为浅色背景和深色文字
+const getTagColors = (color: string) => {
+  if (!color) {
+    return {
+      background: 'white',
+      color: 'var(--text-main)',
+      border: '1px solid var(--border-color)'
+    }
+  }
+  
+  // 将hex颜色转换为RGB
+  const hex = color.replace('#', '')
+  const r = parseInt(hex.substring(0, 2), 16)
+  const g = parseInt(hex.substring(2, 4), 16)
+  const b = parseInt(hex.substring(4, 6), 16)
+  
+  // 计算亮度（使用相对亮度公式）
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000
+  
+  // 标签池中的颜色已经是浅色，直接使用作为背景
+  const background = color
+  // 根据背景亮度决定文字颜色（阈值调整为140，因为标签颜色都比较浅）
+  const textColor = brightness > 140 ? '#1E293B' : '#FFFFFF'
+  // 边框使用原色，如果太浅则加深
+  let borderColor = color
+  if (brightness > 200) {
+    // 如果颜色太浅，边框稍微加深
+    const darkerR = Math.max(0, r - 20)
+    const darkerG = Math.max(0, g - 20)
+    const darkerB = Math.max(0, b - 20)
+    borderColor = `#${darkerR.toString(16).padStart(2, '0')}${darkerG.toString(16).padStart(2, '0')}${darkerB.toString(16).padStart(2, '0')}`
+  }
+  
+  return {
+    background,
+    color: textColor,
+    border: `1px solid ${borderColor}`
+  }
+}
+
+const getTagCustomClass = (tag: string) => {
+  const tagInfo = customerStore.tagPool.find(t => t.name === tag)
+  
+  // 热度极高：红色背景和边框
+  if (tag.includes('热度极高') || tag.includes('热度')) {
+    return 'tag-hot'
+  }
+  
+  // 根据分类返回不同的样式类
+  if (tagInfo?.category) {
+    const category = tagInfo.category
+    if (category.includes('意向级别')) return 'tag-intent'
+    if (category.includes('SC')) return 'tag-sc'
+    if (category.includes('SA')) return 'tag-sa'
+    if (category.includes('续保')) return 'tag-insurance'
+    if (category.includes('POC')) return 'tag-poc'
+    if (category.includes('免打扰')) return 'tag-dnd'
+    if (category.includes('线上活动')) return 'tag-online'
+    if (category.includes('爱好')) return 'tag-hobby'
+  }
+  
+  // 其他标签：默认样式
+  return 'tag-normal'
+}
+
+// 获取标签的样式对象（用于内联样式）
+const getTagStyle = (tag: string) => {
+  // 热度极高：红色样式
+  if (tag.includes('热度极高') || tag.includes('热度')) {
+    return {
+      background: '#FFF5F5',
+      color: '#E53E3E',
+      border: '1px solid #FEB2B2'
+    }
+  }
+  
+  // 从标签池中获取标签信息
+  const tagInfo = customerStore.tagPool.find(t => t.name === tag)
+  
+  if (tagInfo?.color) {
+    // 使用标签池中定义的颜色
+    return getTagColors(tagInfo.color)
+  }
+  
+  // 默认样式：白色背景，灰色边框
+  return {
+    background: 'white',
+    color: 'var(--text-main)',
+    border: '1px solid var(--border-color)'
+  }
+}
+
 // 车辆状态选项
 const vehicleStatusOptions = [
   { name: '已售', value: '已售' },
@@ -1007,6 +1060,19 @@ const segmentList = computed(() => {
   return segmentType.value ? [String(segmentType.value)] : []
 })
 
+// 格式化操作时间
+const formatOperationTime = (time: string): string => {
+  try {
+    const date = new Date(time)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}年${month}月${day}日`
+  } catch (e) {
+    return time
+  }
+}
+
 // 最新操作信息文本
 const latestOperationText = computed(() => {
   const profile = customerStore.profile
@@ -1019,21 +1085,7 @@ const latestOperationText = computed(() => {
     return ''
   }
   
-  // 格式化时间
-  const formatTime = (time: string) => {
-    try {
-      const date = new Date(time)
-      const year = date.getFullYear()
-      const month = String(date.getMonth() + 1).padStart(2, '0')
-      const day = String(date.getDate()).padStart(2, '0')
-      return `${year}年${month}月${day}日`
-    } catch (e) {
-      return time
-    }
-  }
-  
-  const timeText = formatTime(latestOperation.operationTime)
-  return `该顾客已被 ${latestOperation.operator} ${latestOperation.operationType} （${timeText}）`
+  return `该顾客已被 ${latestOperation.operator} ${latestOperation.operationType}`
 })
 
 // 可用标签（排除已选标签）
@@ -1776,20 +1828,395 @@ onMounted(async () => {
 <style scoped lang="scss">
 .home-container {
   min-height: 100vh;
-  background: #f7f8fa;
-  padding: 2px; // 进一步减少容器内边距
+  background: var(--bg-slate);
+  padding: 0;
   max-width: 100%;
   box-sizing: border-box;
-  padding-bottom: 8px; // 进一步减少底部空间
-  overflow-y: auto; // 允许滚动
+  padding-bottom: 50px; // 为底部 Tab 留出空间
+  overflow-y: auto;
+  font-family: "Porsche Next", -apple-system, "PingFang SC", sans-serif;
+  color: var(--text-main);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 
 // 首屏内容
 .first-screen {
   display: flex;
   flex-direction: column;
-  gap: 2px; // 进一步减少间距，更紧凑
+  gap: 0;
+  margin-bottom: 0;
+}
+
+// 沉浸式头部：带 Jebsen 水印
+.premium-header {
+  background-color: var(--porsche-black);
+  background-image: radial-gradient(circle at 92% 12%, rgba(148, 114, 74, 0.12) 0%, transparent 40%);
+  padding: 12px 16px 45px; // 压缩上下内边距
+  color: white;
+  position: relative;
+  overflow: hidden;
+
+  // Jebsen 水印样式
+  &::before {
+    content: "JEBSEN";
+    position: absolute;
+    right: -10px;
+    top: 10px;
+    font-size: 48px;
+    font-weight: 900;
+    color: rgba(255, 255, 255, 0.04);
+    transform: rotate(-15deg);
+    pointer-events: none;
+    letter-spacing: 4px;
+  }
+}
+
+.header-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: relative;
+  z-index: 1;
+}
+
+.user-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+
+  h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: white;
+    flex: 1;
+  }
+}
+
+.oneid-pill {
+  background: rgba(148, 114, 74, 0.1);
+  border: 1px solid var(--accent-gold);
+  color: var(--accent-gold);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.customer-type-badge {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.header-tags {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  position: relative;
+  z-index: 1;
+}
+
+.vip-tag {
+  background: var(--accent-gold);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 2px;
+  color: #000;
+}
+
+.biz-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+// 手机号区域：极致负边距嵌入头部
+.phone-card {
+  margin: -35px 12px 0;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  padding: 12px;
+  box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.12);
+  position: relative;
+  z-index: 10;
+}
+
+.phone-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.phone-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.num-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.num-val {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--porsche-black);
+  font-family: ui-monospace, monospace;
+
+  &.is-secondary {
+    color: var(--text-sub);
+    font-size: 15px;
+  }
+}
+
+.num-tags {
+  display: flex;
+  gap: 4px;
+}
+
+.n-tag {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  border: 1px solid var(--border-color);
+  color: var(--text-sub);
+  white-space: nowrap;
+
+  &.active {
+    color: #059669;
+    border-color: #059669;
+    background: #F0FDF4;
+  }
+}
+
+.edit-icon {
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px;
+  opacity: 0.8;
+}
+
+// 内容板块
+.container {
+  padding: 0 16px 12px 16px;
+  margin-bottom: 0; // 最后一个 container 不需要底部间距
+}
+
+.block-h {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--accent-gold);
+  text-transform: uppercase;
+  margin: 16px 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.block-h .title-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+
+  &::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border-color);
+  }
+}
+
+.block-more {
+  font-size: 9px;
+  color: var(--text-sub);
+  font-weight: 400;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 8px;
+  text-transform: none;
+}
+
+// 资产档案
+.asset-box {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.asset-row {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr 40px;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid #F1F5F9;
+  gap: 12px;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.model-name {
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--text-main);
+}
+
+.plate-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-gold);
+  letter-spacing: 0.5px;
+}
+
+.vin-val {
+  font-size: 10px;
+  color: var(--text-sub);
+  font-family: ui-monospace, monospace;
+}
+
+.status-text {
+  font-size: 11px;
+  color: var(--text-sub);
+  text-align: right;
+  cursor: pointer;
+}
+
+// 账户权益
+.asset-coupon-box {
+  background: #FCFAF6;
+  border: 1px dashed var(--accent-gold);
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 4px;
+}
+
+.asset-coupon-name {
+  font-size: 12px;
+  font-weight: 700;
+
+  small {
+    font-weight: normal;
+    color: var(--text-sub);
+    margin-left: 4px;
+  }
+}
+
+.asset-coupon-amount {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--accent-gold);
+}
+
+// 画像标签
+.tags-list-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag-item-custom {
+  padding: 3px 10px;
+  font-size: 11px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+.empty-tags-text {
+  color: var(--text-sub);
+  font-size: 11px;
+}
+
+// 基础档案网格
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.info-node {
+  background: white;
+  padding: 10px 4px;
+  text-align: center;
+  border-right: 1px solid var(--border-color);
+
+  &:last-child {
+    border-right: none;
+  }
+}
+
+.node-l {
+  font-size: 9px;
+  color: var(--text-sub);
   margin-bottom: 2px;
+}
+
+.node-v {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+// 底部 Tab 固定栏
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: white;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 10px 0;
+  z-index: 100;
+}
+
+.nav-item {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-sub);
+
+  &.active {
+    color: var(--accent-gold);
+  }
 }
 
 // 姓名卡片（名片样式优化 - 大厂风格）
@@ -1860,7 +2287,7 @@ onMounted(async () => {
           flex-shrink: 0;
           
           &:hover {
-            background: #e8f4ff;
+            background: #FCFAF6;
             transform: scale(1.1);
           }
           
@@ -2279,38 +2706,41 @@ onMounted(async () => {
   }
 }
 
-// 弹窗样式
+// 弹窗样式（统一设计规范 - 紧凑版）
 .opportunity-dialog,
 .vehicle-dialog,
 .asset-dialog,
 .tag-manager {
-  padding: 16px;
+  padding: 12px;
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #ffffff;
+  background: var(--bg-slate);
+  font-family: "Porsche Next", -apple-system, "PingFang SC", sans-serif;
   
   .popup-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 10px; // 减少内边距
-    border-bottom: 1px solid #ebedf0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
     margin-bottom: 0;
     flex-shrink: 0;
     
     h3 {
       margin: 0;
-      font-size: 14px; // 统一标题字体大小
+      font-size: 14px;
       font-weight: 600;
-      color: #323233;
+      color: var(--text-main);
+      letter-spacing: -0.01em;
     }
     
     .van-icon {
-      font-size: 16px; // 统一图标大小
-      color: #969799;
+      font-size: 16px;
+      color: var(--text-sub);
       cursor: pointer;
-      padding: 3px; // 减少内边距
+      padding: 4px;
+      transition: opacity 0.2s;
       
       &:active {
         opacity: 0.7;
@@ -2321,29 +2751,32 @@ onMounted(async () => {
   .popup-content {
     flex: 1;
     overflow-y: auto;
-    padding-top: 12px; // 减少内边距
-    min-height: 0; // 确保可以滚动
+    padding-top: 10px;
+    min-height: 0;
   }
   
   .popup-footer {
     display: flex;
-    gap: 10px; // 减少间距
-    padding-top: 12px; // 减少内边距
-    border-top: 1px solid #ebedf0;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
     flex-shrink: 0;
     margin-top: auto;
     
     .van-button {
       flex: 1;
+      font-size: 14px !important;
+      height: 40px;
     }
   }
   
   .opportunity-item {
     background: white;
-    border-radius: 6px; // 减小圆角
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06); // 减小阴影
-    padding: 10px 12px; // 减少内边距
-    margin-bottom: 6px; // 减少间距
+    border-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    border: 1px solid var(--border-color);
     
     &:last-child {
       margin-bottom: 0;
@@ -2353,9 +2786,9 @@ onMounted(async () => {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px; // 减少间距
+      margin-bottom: 8px;
       flex-wrap: wrap;
-      gap: 6px; // 减少间距
+      gap: 6px;
       
       .opportunity-type-wrapper {
         display: flex;
@@ -2386,27 +2819,27 @@ onMounted(async () => {
       .info-row {
         display: flex;
         align-items: center;
-        margin-bottom: 6px; // 减少间距
-        font-size: 12px; // 减小字体
-        min-height: 20px; // 减小最小高度
-        line-height: 1.3; // 优化行高
+        margin-bottom: 6px;
+        font-size: 12px;
+        min-height: 20px;
+        line-height: 1.3;
         
         &:last-child {
           margin-bottom: 0;
         }
         
         .label {
-          color: #969799;
-          min-width: 70px; // 减少最小宽度
+          color: var(--text-sub);
+          min-width: 70px;
           flex-shrink: 0;
-          font-size: 12px; // 减小字体
+          font-size: 12px;
         }
         
         .value {
-          color: #323233;
+          color: var(--text-main);
           flex: 1;
           word-break: break-all;
-          font-size: 12px; // 减小字体
+          font-size: 12px;
         }
         
         .priority-tag {
@@ -2418,58 +2851,59 @@ onMounted(async () => {
   
   .asset-item {
     background: white;
-    border-radius: 6px; // 减小圆角
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06); // 减小阴影
-    margin-bottom: 6px; // 减少间距
+    border-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    margin-bottom: 6px;
+    border: 1px solid var(--border-color);
     
     &:last-child {
       margin-bottom: 0;
     }
     
     .card-header {
-      padding: 8px 12px; // 减少内边距
-      border-bottom: 1px solid #ebedf0;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border-color);
       display: flex;
       justify-content: space-between;
       align-items: center;
       
       .record-title {
-        font-size: 13px; // 减小字体
+        font-size: 13px;
         font-weight: 600;
-        color: #323233;
+        color: var(--text-main);
       }
     }
     
     .card-content {
-      padding: 8px 12px; // 减少内边距
+      padding: 8px 12px;
       
       .info-row {
         display: flex;
-        margin-bottom: 6px; // 减少间距
-        font-size: 12px; // 减小字体
-        line-height: 1.3; // 优化行高
+        margin-bottom: 6px;
+        font-size: 12px;
+        line-height: 1.3;
         
         &:last-child {
           margin-bottom: 0;
         }
         
         .label {
-          color: #969799;
-          min-width: 70px; // 减少最小宽度
+          color: var(--text-sub);
+          min-width: 70px;
           flex-shrink: 0;
-          font-size: 12px; // 减小字体
+          font-size: 12px;
         }
         
         .value {
-          color: #323233;
+          color: var(--text-main);
           flex: 1;
           word-break: break-all;
-          font-size: 12px; // 减小字体
+          font-size: 12px;
           
           &.amount {
-            color: #ee0a24;
-            font-weight: 600;
-            font-size: 13px; // 减小字体
+            color: var(--accent-gold);
+            font-weight: 700;
+            font-size: 13px;
           }
         }
       }
@@ -2478,10 +2912,11 @@ onMounted(async () => {
   
   .vehicle-item-full {
     background: white;
-    border-radius: 6px; // 减小圆角
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06); // 减小阴影
-    padding: 10px 12px; // 减少内边距
-    margin-bottom: 6px; // 减少间距
+    border-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    border: 1px solid var(--border-color);
     
     &:last-child {
       margin-bottom: 0;
@@ -2491,12 +2926,12 @@ onMounted(async () => {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px; // 减少间距
+      margin-bottom: 8px;
       
       .vehicle-model {
-        font-size: 13px; // 减小字体
+        font-size: 13px;
         font-weight: 600;
-        color: #323233;
+        color: var(--text-main);
       }
       
       .vehicle-status-wrapper {
@@ -2509,11 +2944,11 @@ onMounted(async () => {
         transition: background-color 0.2s;
         
         &:hover {
-          background-color: #f7f8fa;
+          background-color: var(--bg-slate);
         }
         
         &:active {
-          background-color: #ebedf0;
+          background-color: var(--border-color);
         }
         
         .status-tag-clickable {
@@ -2522,7 +2957,7 @@ onMounted(async () => {
         
         .status-arrow-icon {
           font-size: 12px;
-          color: #969799;
+          color: var(--text-sub);
           transition: transform 0.2s;
         }
         
@@ -2535,25 +2970,25 @@ onMounted(async () => {
     .vehicle-info {
       .info-item {
         display: flex;
-        margin-bottom: 6px; // 减少间距
-        font-size: 12px; // 减小字体
-        line-height: 1.3; // 优化行高
+        margin-bottom: 6px;
+        font-size: 12px;
+        line-height: 1.3;
         
         &:last-child {
           margin-bottom: 0;
         }
         
         .label {
-          color: #969799;
-          min-width: 70px; // 减少最小宽度
+          color: var(--text-sub);
+          min-width: 70px;
           flex-shrink: 0;
-          font-size: 12px; // 减小字体
+          font-size: 12px;
         }
         
         .value {
-          color: #323233;
+          color: var(--text-main);
           flex: 1;
-          font-size: 12px; // 减小字体
+          font-size: 12px;
         }
       }
     }
@@ -2562,7 +2997,7 @@ onMounted(async () => {
   // 标签管理弹窗特殊样式
   &.tag-manager {
     .tag-category-section {
-      margin-bottom: 16px;
+      margin-bottom: 12px;
       
       &:last-child {
         margin-bottom: 0;
@@ -2574,10 +3009,10 @@ onMounted(async () => {
         gap: 8px;
         font-size: 13px;
         font-weight: 600;
-        color: #323233;
-        margin-bottom: 10px;
-        padding-bottom: 8px;
-        border-bottom: 1px solid #ebedf0;
+        color: var(--text-main);
+        margin-bottom: 8px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--border-color);
         
         .category-name {
           flex: 1;
@@ -2585,33 +3020,35 @@ onMounted(async () => {
         
         .required-badge {
           padding: 2px 6px;
-          background: #fff4e8;
-          color: #ff976a;
-          border-radius: 4px;
-          font-size: 11px;
-          font-weight: 500;
+          background: #FFF5F5;
+          color: #E53E3E;
+          border: 1px solid #FEB2B2;
+          border-radius: 2px;
+          font-size: 10px;
+          font-weight: 600;
         }
         
         .min-select-badge {
           padding: 2px 6px;
-          background: #e6f7ff;
-          color: #1890ff;
-          border-radius: 4px;
-          font-size: 11px;
-          font-weight: 500;
+          background: #FCFAF6;
+          color: var(--accent-gold);
+          border: 1px solid #E8DCC8;
+          border-radius: 2px;
+          font-size: 10px;
+          font-weight: 600;
         }
         
         .selected-count {
           font-size: 11px;
-          color: #969799;
-          font-weight: normal;
+          color: var(--text-sub);
+          font-weight: 400;
         }
       }
       
       .tag-list {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 6px;
         padding: 8px 0;
         
         .tag-item {
@@ -2631,7 +3068,7 @@ onMounted(async () => {
           }
           
           &.is-selected {
-            box-shadow: 0 2px 4px rgba(25, 137, 250, 0.2);
+            box-shadow: 0 2px 4px rgba(148, 114, 74, 0.2);
           }
         }
       }
@@ -2645,36 +3082,91 @@ onMounted(async () => {
   }
 }
 
-.main-tabs {
-  // 优化 tab 样式，使其更紧凑
-  margin-top: 2px; // 进一步减少顶部间距
+// Tab 容器（统一tab和内容的视觉连接）
+.tab-container {
+  margin-top: 16px;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+  padding: 0;
+}
+
+// Tab 导航样式（与内容区域统一）
+.tab-nav-wrapper {
+  display: flex;
+  align-items: stretch;
+  background: var(--bg-slate);
+  border-bottom: 1px solid var(--border-color);
+  margin: 0;
   
-  :deep(.van-tabs__wrap) {
-    padding: 0 2px; // 进一步减少左右内边距
-    height: auto !important; // 允许高度自适应
+  .tab-nav-item {
+    flex: 1;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-sub);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    padding: 8px 12px;
+    user-select: none;
+    position: relative;
+    background: transparent;
+    
+    // 底部指示线
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: transparent;
+      transition: background 0.2s;
+    }
+    
+    &.active {
+      color: var(--accent-gold);
+      background: white;
+      font-weight: 700;
+      
+      // 激活状态的底部指示线
+      &::after {
+        background: var(--accent-gold);
+      }
+    }
+    
+    &:active {
+      opacity: 0.8;
+    }
+    
+    // 分隔线
+    &:not(:last-child) {
+      border-right: 1px solid var(--border-color);
+    }
   }
+}
+
+.tab-content-wrapper {
+  margin: 0;
+  background: white;
   
-  :deep(.van-tabs__nav) {
-    padding: 0; // 移除导航栏内边距
-  }
-  
-  :deep(.van-tab) {
-    font-size: 12px !important; // 进一步减小字体
-    padding: 5px 8px !important; // 进一步减少内边距
-    line-height: 1.2 !important;
-    min-height: 30px !important; // 进一步减小最小高度
-    height: 30px !important; // 固定高度
-    flex: 0 0 auto !important; // 不自动扩展
-  }
-  
-  :deep(.van-tabs__line) {
-    height: 2px; // 减小指示线高度
-    bottom: 0; // 指示线位置
-  }
-  
-  :deep(.van-tabs__content) {
-    padding-bottom: 4px; // 进一步减少底部空间
-    padding-top: 2px; // 进一步减少顶部空间
+  .tab-content {
+    min-height: 200px;
+    
+    // 确保内容区域与tab无缝连接
+    :deep(.maintenance-container),
+    :deep(.insurance-container) {
+      background: transparent;
+      padding: 12px;
+      padding-top: 8px;
+      margin: 0;
+    }
+    
+    // 确保内容区域有合适的间距
+    :deep(.container) {
+      padding: 0;
+    }
   }
 }
 
@@ -2777,7 +3269,7 @@ onMounted(async () => {
   .card-header {
     padding: 16px;
     border-bottom: 1px solid #ebedf0;
-    background: linear-gradient(135deg, #e8f4ff 0%, #d0e8ff 100%);
+    background: linear-gradient(135deg, #FCFAF6 0%, #F5F0E8 100%);
   }
 
   .card-title {
@@ -2791,59 +3283,42 @@ onMounted(async () => {
   }
 }
 
-.conflict-alert-top {
-  margin-bottom: 2px; // 减少间距
-  border-radius: 2px;
-  overflow: visible;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+// 顶部状态栏系统
+.alert-system {
+  border-bottom: 1px solid var(--border-color);
+}
 
-  :deep(.van-notice-bar) {
-    padding: 2px 8px !important; // 减少内边距
-    transition: opacity 0.2s;
-    font-size: 11px !important; // 减小字体
-    line-height: 1.2 !important; // 优化行高
-    // background: #fff7e6 !important;
-    color: #d46b08 !important;
-    // border: 1px solid #ffe7ba;
-    min-height: auto !important;
-    height: auto !important;
-    display: flex !important;
-    align-items: center !important;
-    overflow: visible !important;
+.alert-item {
+  padding: 8px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: opacity 0.2s;
 
-    * {
-      color: #d46b08 !important;
-    }
-
-    .van-notice-bar__wrap {
-      display: flex !important;
-      align-items: center !important;
-      flex: 1;
-      overflow: visible !important;
-    }
-
-    .van-notice-bar__left-icon {
-      font-size: 11px !important;
-      margin-right: 3px !important;
-      color: #d46b08 !important;
-      display: inline-block !important;
-      visibility: visible !important;
-    }
-
-    .van-notice-bar__content {
-      line-height: 1.3 !important;
-      color: #d46b08 !important;
-      display: block !important;
-      visibility: visible !important;
-      opacity: 1 !important;
-      height: auto !important;
-      min-height: auto !important;
-    }
-
-    &:active {
-      opacity: 0.8;
-    }
+  &:active {
+    opacity: 0.8;
   }
+}
+
+.alert-orange {
+  background: #FFFBEB;
+  color: var(--alert-orange);
+}
+
+.alert-blue {
+  background: #F0F7FF;
+  color: var(--alert-blue);
+  border-top: 1px solid #DBEAFE;
+  justify-content: space-between;
+  // 保持蓝色用于信息提示，但使用更柔和的蓝色背景
+}
+
+.conflict-alert-top {
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .multi-source-alert {
@@ -2874,58 +3349,8 @@ onMounted(async () => {
 }
 
 .operation-alert {
-  margin-bottom: 2px;
-  border-radius: 2px;
-  overflow: visible;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-
-  :deep(.van-notice-bar) {
-    padding: 2px 8px !important; // 减少内边距
-    transition: opacity 0.2s;
-    font-size: 11px !important; // 减小字体
-    line-height: 1.2 !important; // 优化行高
-    // background: #e6f7ff !important;
-    color: var(--van-tag-primary-color) !important;
-    // border: 1px solid #91d5ff;
-    min-height: auto !important;
-    height: auto !important;
-    display: flex !important;
-    align-items: center !important;
-    overflow: visible !important;
-
-    * {
-      color: var(--van-tag-primary-color) !important;
-    }
-
-    .van-notice-bar__wrap {
-      display: flex !important;
-      align-items: center !important;
-      flex: 1;
-      overflow: visible !important;
-    }
-
-    .van-notice-bar__left-icon {
-      font-size: 11px !important;
-      margin-right: 3px !important;
-      color: var(--van-tag-primary-color) !important;
-      display: inline-block !important;
-      visibility: visible !important;
-    }
-
-    .van-notice-bar__content {
-      line-height: 1.3 !important;
-      color: var(--van-tag-primary-color) !important;
-      display: block !important;
-      visibility: visible !important;
-      opacity: 1 !important;
-      height: auto !important;
-      min-height: auto !important;
-    }
-
-    &:active {
-      opacity: 0.8;
-    }
-  }
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .important-info {
@@ -3036,7 +3461,7 @@ onMounted(async () => {
     border: 2px solid var(--van-tag-primary-color);
     
     .card-header {
-      background: linear-gradient(135deg, #e8f4ff 0%, #d0e8ff 100%);
+      background: linear-gradient(135deg, #FCFAF6 0%, #F5F0E8 100%);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -3176,49 +3601,77 @@ onMounted(async () => {
 }
 
 .basic-info-editor {
-  padding: 12px; // 统一内边距
+  padding: 12px;
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #f7f8fa;
+  background: var(--bg-slate);
+  font-family: "Porsche Next", -apple-system, "PingFang SC", sans-serif;
 
   .popup-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 10px; // 减少内边距
-    border-bottom: 1px solid #ebedf0;
-    margin-bottom: 12px; // 减少间距
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 0;
+    flex-shrink: 0;
 
     h3 {
       margin: 0;
-      font-size: 14px; // 统一标题字体大小
+      font-size: 14px;
       font-weight: 600;
-      color: #323233;
+      color: var(--text-main);
+      letter-spacing: -0.01em;
     }
 
     .van-icon {
-      font-size: 16px; // 统一图标大小
-      color: #969799;
+      font-size: 16px;
+      color: var(--text-sub);
       cursor: pointer;
+      padding: 4px;
+      transition: opacity 0.2s;
+      
+      &:active {
+        opacity: 0.7;
+      }
     }
   }
 
   .popup-content {
     flex: 1;
     overflow-y: auto;
-    padding-top: 12px; // 减少内边距
+    padding-top: 10px;
+    
+    :deep(.van-field) {
+      background: white;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      
+      .van-field__label {
+        color: var(--text-sub);
+        font-size: 12px;
+      }
+      
+      .van-field__control {
+        color: var(--text-main);
+        font-size: 13px;
+      }
+    }
   }
 
   .edit-actions {
     display: flex;
-    gap: 10px; // 减少间距
-    margin-top: 16px; // 减少间距
-    padding-top: 12px; // 减少内边距
-    border-top: 1px solid #ebedf0;
+    gap: 8px;
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
 
     .van-button {
       flex: 1;
+      font-size: 14px !important;
+      height: 40px;
     }
   }
 }
@@ -3236,8 +3689,8 @@ onMounted(async () => {
     border: 1px solid #ebedf0;
 
     &.is-primary {
-      background: #e8f4ff;
-      border-color: var(--van-tag-primary-color);
+      background: #FCFAF6;
+      border-color: var(--accent-gold);
     }
 
     .mobile-info {
@@ -3487,8 +3940,8 @@ onMounted(async () => {
   transition: background 0.2s;
 
   &.is-selected {
-    background: #e8f4ff;
-    border: 1px solid #1989fa;
+    background: #FCFAF6;
+    border: 1px solid var(--accent-gold);
   }
 
   &:active {

@@ -124,12 +124,11 @@ onMounted(async () => {
 
 <style scoped lang="scss">
 .insurance-container {
-  min-height: 100vh;
-  background: #f7f8fa;
-  padding: 4px; // 减少内边距，与首屏保持一致
+  min-height: 200px;
+  background: transparent;
+  padding: 0;
   max-width: 100%;
   box-sizing: border-box;
-  padding-bottom: 12px; // 减少底部空间
   
   // van-list 样式
   :deep(.van-list) {

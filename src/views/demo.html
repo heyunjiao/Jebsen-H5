@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>C360 Elite Dashboard - Jebsen Edition</title>
+    <style>
+        :root {
+            --porsche-black: #0F1113;
+            --accent-gold: #94724A;
+            --bg-slate: #F8FAFC;
+            --text-main: #1E293B;
+            --text-sub: #64748B;
+            --border-color: #E2E8F0;
+            --alert-blue: #000;
+            --alert-orange: #B45309;
+        }
+
+        body {
+            background-color: var(--bg-slate);
+            font-family: "Porsche Next", -apple-system, "PingFang SC", sans-serif;
+            margin: 0; padding: 0; color: var(--text-main);
+            line-height: 1.2; letter-spacing: -0.01em;
+        }
+
+        /* --- 1. 顶部状态栏：紧凑高度 --- */
+        .alert-system { border-bottom: 1px solid var(--border-color); }
+        .alert-item {
+            padding: 8px 16px; font-size: 11px; font-weight: 600;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .alert-orange { background: #FFFBEB; color: var(--alert-orange); }
+        .alert-blue { background: #F0F7FF; color: var(--alert-blue); border-top: 1px solid #DBEAFE; }
+
+        /* --- 2. 沉浸式头部：带 Jebsen 水印 --- */
+        .premium-header {
+            background-color: var(--porsche-black);
+            background-image: radial-gradient(circle at 92% 12%, rgba(148, 114, 74, 0.12) 0%, transparent 40%);
+            padding: 12px 16px 45px; /* 压缩上下内边距 */
+            color: white; position: relative; overflow: hidden;
+        }
+        
+        /* Jebsen 水印样式 */
+        .premium-header::before {
+            content: "JEBSEN";
+            position: absolute; right: -10px; top: 10px;
+            font-size: 48px; font-weight: 900;
+            color: rgba(255, 255, 255, 0.04);
+            transform: rotate(-15deg);
+            pointer-events: none;
+            letter-spacing: 4px;
+        }
+
+        .header-main { display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 1; }
+        .user-name-row { display: flex; align-items: center; gap: 10px; }
+        .user-name-row h1 { margin: 0; font-size: 24px; font-weight: 600; }
+        .oneid-pill { 
+            background: rgba(148, 114, 74, 0.1); border: 1px solid var(--accent-gold); 
+            color: var(--accent-gold); font-size: 10px; font-weight: 800; 
+            padding: 1px 6px; border-radius: 2px;
+        }
+        .header-tags { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; position: relative; z-index: 1; }
+        .vip-tag { background: var(--accent-gold); font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 2px; color: #000; }
+        .biz-badge { 
+            font-size: 10px; padding: 2px 8px; border-radius: 2px;
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+        }
+
+        /* --- 3. 手机号区域：极致负边距 --- */
+        .phone-card {
+            margin: -35px 12px 0; background: white; border-radius: 4px;
+            border: 1px solid var(--border-color); padding: 12px;
+            box-shadow: 0 10px 20px -10px rgba(0,0,0,0.12);
+            position: relative; z-index: 10;
+        }
+        .phone-entry { display: flex; flex-direction: column; gap: 2px; }
+        .phone-row { display: flex; align-items: center; justify-content: space-between; }
+        .num-group { display: flex; align-items: center; gap: 10px; }
+        .num-val { font-size: 16px; font-weight: 700; color: var(--porsche-black); font-family: ui-monospace, monospace; }
+        .num-tags { display: flex; gap: 4px; }
+        .n-tag { font-size: 9px; padding: 1px 5px; border-radius: 2px; border: 1px solid var(--border-color); color: var(--text-sub); }
+        .n-tag.active { color: #059669; border-color: #059669; background: #F0FDF4; }
+        .edit-icon { font-size: 14px; cursor: pointer; padding: 2px; opacity: 0.8; }
+
+        /* --- 4. 内容板块：添加查看更多设计 --- */
+        .container { padding: 0 16px 12px 16px; margin-bottom: 50px; }
+        .block-h { 
+            font-size: 11px; font-weight: 800; color: var(--accent-gold); 
+            text-transform: uppercase; margin: 16px 0 10px;
+            display: flex; align-items: center; justify-content: space-between; /* 撑开标题和更多按钮 */
+        }
+        .block-h span.title-text { display: flex; align-items: center; gap: 8px; flex: 1; }
+        .block-h span.title-text::after { content: ""; flex: 1; height: 1px; background: var(--border-color); }
+        .block-more { 
+            font-size: 9px; color: var(--text-sub); font-weight: 400; 
+            cursor: pointer; display: flex; align-items: center; gap: 2px; 
+            margin-left: 8px; text-transform: none; 
+        }
+
+        /* 资产档案 */
+        .asset-box { background: white; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden; }
+        .asset-row {
+            display: grid; grid-template-columns: 1fr 1.5fr 1fr 40px; 
+            align-items: center; padding: 10px 16px; 
+            border-bottom: 1px solid #F1F5F9; gap: 12px;
+        }
+        .asset-row:last-child { border-bottom: none; }
+        .ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+        .model-name { font-weight: 400; font-size: 13px; color: var(--text-main); }
+        .plate-val { font-size: 13px; font-weight: 700; color: var(--accent-gold); letter-spacing: 0.5px; }
+        .vin-val { font-size: 10px; color: var(--text-sub); font-family: ui-monospace, monospace; }
+
+        /* 基础档案网格 */
+        .info-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;
+        }
+        .info-node { background: white; padding: 10px 4px; text-align: center; border-right: 1px solid var(--border-color); }
+        .info-node:last-child { border-right: none; }
+        .node-l { font-size: 9px; color: var(--text-sub); margin-bottom: 2px; }
+        .node-v { font-size: 13px; font-weight: 700; }
+
+        /* --- 5. 底部 Tab 固定栏 --- */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: white; border-top: 1px solid var(--border-color);
+            display: flex; justify-content: space-around; align-items: center;
+            padding: 10px 0; z-index: 100;
+        }
+        .nav-item { font-size: 12px; font-weight: 700; color: var(--text-sub); }
+        .nav-item.active { color: var(--accent-gold); }
+    </style>
+</head>
+<body>
+
+    <div class="alert-system">
+        <div class="alert-item alert-orange">
+            ⚠️ 该顾客疑似存在多条记录冲突，请核实身份信息
+        </div>
+        <div class="alert-item alert-blue">
+            <span>ℹ️ 该顾客已被 Rebecca Z. 人工更新</span>
+            <span>2025年01月15日 ›</span>
+        </div>
+    </div>
+
+    <div class="premium-header">
+        <div class="header-main">
+            <div class="user-name-row">
+                <h1>陈明</h1>
+                <span class="oneid-pill">ONEID：62353</span>
+            </div>
+        </div>
+        <div class="header-tags">
+            <span class="vip-tag">VIP 车主</span>
+            <span class="biz-badge">首保流失15个月</span>
+            <span class="biz-badge">PCN 售后增项</span>
+        </div>
+    </div>
+
+    <div class="phone-card">
+        <div class="phone-entry">
+            <div class="phone-row">
+                <div class="num-group">
+                    <span class="num-val">138 0013 8000</span>
+                    <div class="num-tags">
+                        <span class="n-tag active">主号</span>
+                        <span class="n-tag">车主</span>
+                    </div>
+                </div>
+                <span class="edit-icon">✏️</span>
+            </div>
+            <div style="height: 1px; background: #F1F5F9; margin: 4px 0;"></div>
+            <div class="phone-row">
+                <div class="num-group">
+                    <span class="num-val" style="color:var(--text-sub); font-size:15px;">139 0013 9000</span>
+                    <div class="num-tags">
+                        <span class="n-tag">送</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="block-h">
+            <span class="title-text">旗下资产 (2)</span>
+            <span class="block-more">查看更多 ›</span>
+        </div>
+        <div class="asset-box">
+            <div class="asset-row">
+                <span class="model-name ellipsis">911 Carrera</span>
+                <span class="plate-val ellipsis">沪A·12345</span>
+                <span class="vin-val ellipsis">WP0AB2A99DS123456</span>
+                <span style="font-size:11px; color:var(--text-sub); text-align:right;">已售</span>
+            </div>
+            <div class="asset-row">
+                <span class="model-name ellipsis">Cayenne Hybrid</span>
+                <span class="plate-val ellipsis">沪B·67890</span>
+                <span class="vin-val ellipsis">WP1AG2A99DS67890</span>
+                <span style="font-size:11px; color:var(--text-sub); text-align:right;">已售</span>
+            </div>
+        </div>
+
+        <div class="block-h">
+            <span class="title-text">账户权益</span>
+            <span class="block-more">查看更多 ›</span>
+        </div>
+        <div style="background: #FCFAF6; border: 1px dashed var(--accent-gold); padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px;">
+            <div style="font-size:12px; font-weight:700">保养代金券 <small style="font-weight:normal; color:var(--text-sub); margin-left:4px;">至 2025-01-01</small></div>
+            <div style="font-size:15px; font-weight:800; color:var(--accent-gold)">¥1,000.00</div>
+        </div>
+
+        <div class="block-h">
+            <span class="title-text">画像标签</span>
+            <span class="block-more">编辑标签 ›</span>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            <span style="background: #FFF5F5; color: #E53E3E; border: 1px solid #FEB2B2; padding: 3px 10px; font-size: 11px; border-radius: 2px;">热度极高</span>
+            <span style="background: white; border: 1px solid var(--border-color); padding: 3px 10px; font-size: 11px; border-radius: 2px;">PMP 邀约</span>
+            <span style="background: white; border: 1px solid var(--border-color); padding: 3px 10px; font-size: 11px; border-radius: 2px;">本市车牌</span>
+        </div>
+
+        <div class="block-h">
+            <span class="title-text">基础档案</span>
+            <!-- <span class="block-more">完整档案 ›</span> -->
+        </div>
+        <div class="info-grid">
+            <div class="info-node"><div class="node-l">姓名</div><div class="node-v">陈明</div></div>
+            <div class="info-node"><div class="node-l">年龄</div><div class="node-v">35</div></div>
+            <div class="info-node"><div class="node-l">性别</div><div class="node-v">男</div></div>
+            <div class="info-node"><div class="node-l">城市</div><div class="node-v">上海</div></div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item">维保记录</div>
+        <div class="nav-item active">保险合同</div>
+    </div>
+</body>
+</html>

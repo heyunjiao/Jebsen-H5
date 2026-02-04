@@ -160,69 +160,85 @@ watch(() => props.show, (newVal) => {
 
 <style scoped lang="scss">
 .conflict-resolver {
-  padding: 12px; // 减少内边距
+  padding: 12px;
   height: 100%;
   display: flex;
   flex-direction: column;
+  background: var(--bg-slate);
+  font-family: "Porsche Next", -apple-system, "PingFang SC", sans-serif;
 }
 
 .popup-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 10px; // 统一内边距
-  border-bottom: 1px solid #ebedf0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
+  margin-bottom: 0;
 
   h3 {
     margin: 0;
-    font-size: 14px; // 统一标题字体大小
+    font-size: 14px;
     font-weight: 600;
-    color: #323233;
+    color: var(--text-main);
+    letter-spacing: -0.01em;
   }
 
   .van-icon {
-    font-size: 16px; // 统一图标大小
-    color: #969799;
+    font-size: 16px;
+    color: var(--text-sub);
     cursor: pointer;
+    padding: 4px;
+    transition: opacity 0.2s;
+    
+    &:active {
+      opacity: 0.7;
+    }
   }
 }
 
 .popup-content {
   flex: 1;
   overflow-y: auto;
-  padding-top: 12px; // 减少内边距
+  padding-top: 10px;
 }
 
 .conflict-tip {
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .conflict-list {
   display: flex;
   flex-direction: column;
-  gap: 8px; // 减少间距
-  margin-bottom: 12px; // 减少间距
+  gap: 6px;
+  margin-bottom: 10px;
 }
 
 .conflict-item {
   display: flex;
   align-items: flex-start;
-  gap: 10px; // 减少间距
-  padding: 8px 10px; // 减少内边距
-  background: #f7f8fa;
-  border-radius: 6px; // 减小圆角
+  gap: 8px;
+  padding: 10px 12px;
+  background: white;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s;
-  border: 2px solid transparent;
+  border: 1px solid var(--border-color);
+  margin-bottom: 6px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 
   &.is-selected {
-    background: #e8f4ff;
-    border-color: #1989fa;
+    background: #FCFAF6;
+    border-color: var(--accent-gold);
+    border-width: 2px;
   }
 
   &:active {
-    background: #ebedf0;
+    background: var(--bg-slate);
   }
 
   .item-content {
@@ -233,36 +249,36 @@ watch(() => props.show, (newVal) => {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
 
       .item-time {
-        font-size: 12px;
-        color: #969799;
+        font-size: 11px;
+        color: var(--text-sub);
       }
     }
 
     .item-info {
       .info-row {
         display: flex;
-        margin-bottom: 3px; // 减少间距
-        font-size: 12px; // 减小字体
-        line-height: 1.3; // 优化行高
+        margin-bottom: 4px;
+        font-size: 12px;
+        line-height: 1.3;
 
         &:last-child {
           margin-bottom: 0;
         }
 
         .label {
-          color: #969799;
-          min-width: 55px; // 减少最小宽度
+          color: var(--text-sub);
+          min-width: 55px;
           flex-shrink: 0;
-          font-size: 12px; // 减小字体
+          font-size: 12px;
         }
 
         .value {
-          color: #323233;
+          color: var(--text-main);
           font-weight: 500;
-          font-size: 12px; // 减小字体
+          font-size: 12px;
         }
       }
     }
@@ -270,42 +286,46 @@ watch(() => props.show, (newVal) => {
 }
 
 .note-section {
-  margin-top: 12px; // 减少间距
-  padding-top: 12px; // 减少内边距
-  border-top: 1px solid #ebedf0;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
 
   :deep(.van-field) {
-    border: 1px solid #dcdee0;
-    border-radius: 6px; // 减小圆角
-    background: #fff;
-    padding: 8px 10px; // 减少内边距
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: white;
+    padding: 8px 10px;
 
     &:focus-within {
-      border-color: #1989fa;
+      border-color: var(--accent-gold);
     }
 
     .van-field__control {
-      min-height: 50px; // 减小最小高度
-      font-size: 12px; // 减小字体
-      line-height: 1.4; // 优化行高
+      min-height: 50px;
+      font-size: 12px;
+      line-height: 1.3;
+      color: var(--text-main);
     }
 
     .van-field__word-limit {
-      color: #969799;
-      font-size: 11px; // 减小字体
+      color: var(--text-sub);
+      font-size: 11px;
     }
   }
 }
 
 .popup-footer {
   display: flex;
-  gap: 10px; // 减少间距
-  padding-top: 12px; // 减少内边距
-  border-top: 1px solid #ebedf0;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
   flex-shrink: 0;
+  margin-top: auto;
 
   .van-button {
     flex: 1;
+    font-size: 14px !important;
+    height: 40px;
   }
 }
 </style>

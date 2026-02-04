@@ -131,12 +131,11 @@ onMounted(async () => {
 
 <style scoped lang="scss">
 .maintenance-container {
-  min-height: 100vh;
-  background: #f7f8fa;
-  padding: 4px; // 减少内边距，与首屏保持一致
+  min-height: 200px;
+  background: transparent;
+  padding: 0;
   max-width: 100%;
   box-sizing: border-box;
-  padding-bottom: 12px; // 减少底部空间
   
   // van-list 样式
   :deep(.van-list) {
@@ -158,10 +157,11 @@ onMounted(async () => {
 
 .maintenance-card {
   background: white;
-  border-radius: 8px; // 与首屏保持一致
+  border-radius: 4px;
   overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06); // 减小阴影
-  margin-bottom: 3px; // 减少间距，更紧凑
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  margin-bottom: 8px;
+  border: 1px solid var(--border-color);
 
   .card-header {
     padding: 6px 10px; // 减少内边距
