@@ -35,12 +35,31 @@
                     clearable
                     class="mobile-input-field"
                   />
-                  <!-- 非编辑模式：显示号码 -->
+                  <!-- 非编辑模式：显示号码和标签 -->
                   <template v-else>
                     <span class="number">{{ item.mobile }}</span>
+                    <van-tag v-if="item.isPrimary" type="primary" size="small">主号</van-tag>
+                    <van-tag
+                      v-if="item.relationTagName"
+                      type="default"
+                      size="small"
+                      plain
+                      class="inline-tag"
+                    >
+                      {{ item.relationTagName }}
+                    </van-tag>
+                    <van-tag
+                      v-for="businessTag in item.businessTags"
+                      :key="businessTag"
+                      type="default"
+                      size="small"
+                      plain
+                      class="inline-tag"
+                    >
+                      {{ businessTag }}
+                    </van-tag>
+                    <van-tag v-if="item.source" type="default" size="small">{{ item.source }}</van-tag>
                   </template>
-                  <van-tag v-if="item.isPrimary" type="primary">主号码</van-tag>
-                  <van-tag v-if="item.source && editingItemId !== item.id" type="default">{{ item.source }}</van-tag>
                 </div>
                 <div class="mobile-actions">
                   <!-- 编辑模式：显示保存/取消按钮 -->
@@ -77,7 +96,8 @@
                   </template>
                 </div>
               </div>
-              <div class="mobile-item-content">
+              <!-- 编辑模式：标签选择区域（展开式） -->
+              <div v-if="editingItemId === item.id" class="mobile-item-content">
                 <!-- 关系标签选择区域（单选） -->
                 <div class="relation-tag-section">
                   <div class="section-label">关系标签：</div>
@@ -88,16 +108,16 @@
                     <van-tag
                       v-for="tag in tagPool"
                       :key="tag.id"
-                      :type="(editingItemId === item.id ? editForm.relationTagId === tag.id : (item.relationTagId === tag.id)) ? 'primary' : 'default'"
+                      :type="editForm.relationTagId === tag.id ? 'primary' : 'default'"
                       size="small"
                       plain
                       class="tag-option"
-                      :class="{ 'tag-selected': (editingItemId === item.id ? editForm.relationTagId === tag.id : (item.relationTagId === tag.id)) }"
-                      @click="editingItemId === item.id ? handleSelectRelationTag(tag.id) : toggleRelationTag(item, tag.id)"
+                      :class="{ 'tag-selected': editForm.relationTagId === tag.id }"
+                      @click="handleSelectRelationTag(tag.id)"
                     >
                       {{ tag.name }}
                       <van-icon
-                        v-if="(editingItemId === item.id ? editForm.relationTagId === tag.id : (item.relationTagId === tag.id))"
+                        v-if="editForm.relationTagId === tag.id"
                         name="success"
                         class="tag-check-icon"
                       />
@@ -111,24 +131,24 @@
                     <van-tag
                       v-for="businessTag in businessTagOptions"
                       :key="businessTag"
-                      :type="(editingItemId === item.id ? editForm.businessTags?.includes(businessTag) : (item.businessTags?.includes(businessTag))) ? 'primary' : 'default'"
+                      :type="editForm.businessTags?.includes(businessTag) ? 'primary' : 'default'"
                       size="small"
                       plain
                       class="tag-option"
-                      :class="{ 'tag-selected': (editingItemId === item.id ? editForm.businessTags?.includes(businessTag) : (item.businessTags?.includes(businessTag))) }"
-                      @click="editingItemId === item.id ? toggleBusinessTag(businessTag) : toggleBusinessTagForItem(item, businessTag)"
+                      :class="{ 'tag-selected': editForm.businessTags?.includes(businessTag) }"
+                      @click="toggleBusinessTag(businessTag)"
                     >
                       {{ businessTag }}
                       <van-icon
-                        v-if="(editingItemId === item.id ? editForm.businessTags?.includes(businessTag) : (item.businessTags?.includes(businessTag)))"
+                        v-if="editForm.businessTags?.includes(businessTag)"
                         name="success"
                         class="tag-check-icon"
                       />
                     </van-tag>
                   </div>
                 </div>
-                <!-- 号码类型选择（仅在编辑模式显示） -->
-                <div v-if="editingItemId === item.id" class="number-type-selector-inline">
+                <!-- 号码类型选择 -->
+                <div class="number-type-selector-inline">
                   <div class="selector-label">
                     <span>号码类型：</span>
                   </div>
@@ -143,9 +163,6 @@
                       <span>副号</span>
                     </van-radio>
                   </van-radio-group>
-                </div>
-                <div v-if="item.updateTime && editingItemId !== item.id" class="update-time">
-                  更新时间：{{ item.updateTime }}
                 </div>
               </div>
             </div>
@@ -703,7 +720,7 @@ const emitUpdate = () => {
 
 <style scoped lang="scss">
 .mobile-editor {
-  padding: 12px;
+  padding: 0;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -715,10 +732,13 @@ const emitUpdate = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: 0;
+  padding: 12px 16px;
+  padding-bottom: 12px;
+  border-bottom: none;
+  background: white;
+  margin-bottom: 8px;
   flex-shrink: 0;
+  border-radius: 6px 6px 0 0;
 
   h3 {
     margin: 0;
@@ -786,47 +806,56 @@ const emitUpdate = () => {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  padding: 0 12px 12px;
 }
 
 .mobile-list {
   flex: 1;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .mobile-item {
   background: white;
-  border-radius: 4px;
+  border-radius: 6px;
   padding: 10px 12px;
   margin-bottom: 6px;
-  border: 1px solid var(--border-color);
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 
   &:last-child {
     margin-bottom: 0;
   }
 
   &.is-primary {
-    border: 2px solid var(--accent-gold);
-    background: #FCFAF6;
+    border: 1px solid var(--accent-gold);
+    background: white;
   }
 
   .mobile-item-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px; // 增加间距，让号码更突出
+    margin-bottom: 0;
 
     .mobile-number {
       display: flex;
       align-items: center;
-      gap: 6px; // 减少间距
+      gap: 6px;
       flex: 1;
+      flex-wrap: wrap;
 
       .number {
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 700;
         color: var(--text-main);
         letter-spacing: 0.3px;
         font-family: "Monaco", "Menlo", "Consolas", monospace;
+        margin-right: 4px;
+      }
+      
+      .inline-tag {
+        margin: 0;
+        font-size: 10px;
       }
       
       .mobile-input-field {
@@ -874,19 +903,23 @@ const emitUpdate = () => {
   }
 
   .mobile-item-content {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
+    
     .relation-tag-section,
     .business-tag-section {
       margin-bottom: 8px;
-      padding: 12px;
-      background: var(--bg-slate);
-      border-radius: 4px;
-      border: 1px solid var(--border-color);
+
+      &:last-child {
+        margin-bottom: 0;
+      }
 
       .section-label {
-        font-size: 12px;
-        color: var(--text-main);
+        font-size: 11px;
+        color: var(--text-sub);
         font-weight: 500;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
       }
 
       .tag-empty {
@@ -911,15 +944,16 @@ const emitUpdate = () => {
           display: inline-flex;
           align-items: center;
           border-radius: 4px;
-          font-size: 12px;
-          padding: 4px 10px;
+          font-size: 11px;
+          padding: 3px 8px;
           border: 1px solid var(--border-color) !important;
-          background: white !important;
+          background: #fafafa !important;
           color: var(--text-main) !important;
 
           &:hover {
             border-color: var(--accent-gold) !important;
             color: var(--accent-gold) !important;
+            background: #fef9f3 !important;
           }
 
           &.tag-selected {
@@ -952,23 +986,21 @@ const emitUpdate = () => {
   
   // 新增表单
   &.edit-form-new {
-    border: 2px dashed var(--accent-gold);
-    background: #FCFAF6;
+    border: 1px dashed var(--accent-gold);
+    background: white;
   }
 }
 
 .number-type-selector-inline {
-  margin-top: 12px;
-  padding: 12px;
-  background: var(--bg-slate);
-  border-radius: 4px;
-  border: 1px solid var(--border-color);
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
   
   .selector-label {
-    font-size: 13px;
-    color: var(--text-main);
+    font-size: 11px;
+    color: var(--text-sub);
     font-weight: 500;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
   
   .van-radio-group {

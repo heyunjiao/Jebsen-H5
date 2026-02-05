@@ -39,29 +39,42 @@
         </span> -->
     <!-- 首屏内容 -->
     <div v-if="!customerStore.loading && customerStore.profile" class="first-screen">
-      <!-- 沉浸式头部：带 Jebsen 水印 -->
+      <!-- 沉浸式头部：参考图片排版，带多个Jebsen水印 -->
       <div class="premium-header">
+        <!-- 多个Jebsen水印背景 - 铺满背景 -->
+        <div class="watermark-bg"></div>
         <div class="header-main">
-          <div class="user-name-row">
-            <h1>{{ customerStore.profile.name?.value || 'XX' }}</h1>
-            <span class="oneid-pill">ONEID：{{ customerStore.profile.id }}</span>
-            <span v-if="customerStore.profile?.customerType?.value" class="customer-type-badge">
-              <van-icon :name="customerTypeIcon" />
-              {{ customerStore.profile.customerType.value === '个人' ? '个人' : customerStore.profile.customerType.value === '公司' ? '公司' : String(customerStore.profile.customerType.value) }}
-            </span>
+          <!-- 左侧头像 -->
+          <div class="avatar-wrapper">
+            <div class="avatar-circle">
+              <span class="avatar-text">{{ String(customerStore.profile.name?.value || 'XX').charAt(0) }}</span>
+            </div>
           </div>
-        </div>
-        <div class="header-tags">
-          <span 
-            v-for="(tag, index) in displayedHeaderTags" 
-            :key="index"
-            :class="getHeaderTagClass(tag)"
-            :style="{ cursor: isOpportunityTag(tag) ? 'pointer' : 'default' }"
-            @click="isOpportunityTag(tag) ? (showOpportunityDialog = true) : undefined"
-          >
-            <van-icon v-if="getTagIcon(tag)" :name="getTagIcon(tag)" class="tag-icon" />
-            {{ tag }}
-          </span>
+          <!-- 右侧信息 -->
+          <div class="header-info-wrapper">
+            <div class="user-name-row">
+              <h1>{{ customerStore.profile.name?.value || 'XX' }}</h1>
+            </div>
+            <div class="user-meta-row">
+              <span class="oneid-pill">ONEID：{{ customerStore.profile.id }}</span>
+              <span v-if="customerStore.profile?.customerType?.value" class="customer-type-badge">
+                <van-icon :name="customerTypeIcon" />
+                {{ customerStore.profile.customerType.value === '个人' ? '个人' : customerStore.profile.customerType.value === '公司' ? '公司' : String(customerStore.profile.customerType.value) }}
+              </span>
+            </div>
+            <div class="header-tags">
+              <span 
+                v-for="(tag, index) in displayedHeaderTags" 
+                :key="index"
+                :class="getHeaderTagClass(tag)"
+                :style="{ cursor: isOpportunityTag(tag) ? 'pointer' : 'default' }"
+                @click="isOpportunityTag(tag) ? (showOpportunityDialog = true) : undefined"
+              >
+                <van-icon v-if="getTagIcon(tag)" :name="getTagIcon(tag)" class="tag-icon" />
+                {{ tag }}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -73,27 +86,25 @@
             :key="item.id"
           >
             <div class="phone-row">
-              <div class="num-group">
-                <span class="num-val" :class="{ 'is-secondary': !item.isPrimary }">
-                  {{ item.formattedMobile || formatMobile(item.mobile) }}
-                </span>
-                <div class="num-tags">
-                  <span v-if="item.isPrimary" class="n-tag active">主号</span>
-                  <template v-if="item.businessTags && item.businessTags.length > 0">
-                    <span
-                      v-for="(businessTag, tagIndex) in item.businessTags"
-                      :key="tagIndex"
-                      class="n-tag"
-                      :class="{ 'active': businessTag === '车主' }"
-                    >
-                      {{ businessTag }}
-                    </span>
-                  </template>
-                  <!-- 显示关系标签（如"送"、"送修人"、"配偶"） -->
-                  <span v-if="item.relationTagName && !item.isPrimary" class="n-tag">
-                    {{ item.relationTagName }}
+              <span class="num-val" :class="{ 'is-secondary': !item.isPrimary }">
+                {{ item.formattedMobile || formatMobile(item.mobile) }}
+              </span>
+              <div class="num-tags">
+                <span v-if="item.isPrimary" class="n-tag active">主号</span>
+                <template v-if="item.businessTags && item.businessTags.length > 0">
+                  <span
+                    v-for="(businessTag, tagIndex) in item.businessTags"
+                    :key="tagIndex"
+                    class="n-tag"
+                    :class="{ 'active': businessTag === '车主' }"
+                  >
+                    {{ businessTag }}
                   </span>
-                </div>
+                </template>
+                <!-- 显示关系标签（如"送"、"送修人"、"配偶"） -->
+                <span v-if="item.relationTagName && !item.isPrimary" class="n-tag">
+                  {{ item.relationTagName }}
+                </span>
               </div>
               <span 
                 v-if="item.isPrimary && customerStore.profile.mobile && 'items' in customerStore.profile.mobile && customerStore.profile.mobile.editable"
@@ -102,7 +113,7 @@
               >✏️</span>
             </div>
             <!-- 分隔线：在两个手机号之间显示 -->
-            <div v-if="index < displayedPhones.length - 1" style="height: 1px; background: #F1F5F9; margin: 4px 0;"></div>
+            <div v-if="index < displayedPhones.length - 1" class="phone-divider"></div>
           </div>
         </div>
       </div>
@@ -1872,75 +1883,115 @@ onMounted(async () => {
 .home-container {
   min-height: 100vh;
   background: var(--bg-slate);
-  padding: 0;
+  padding: 12px;
   max-width: 100%;
   box-sizing: border-box;
   padding-bottom: 50px; // 为底部 Tab 留出空间
   overflow-y: auto;
   font-family: "Porsche Next", -apple-system, "PingFang SC", sans-serif;
   color: var(--text-main);
-  line-height: 1.2;
+  line-height: 1.5;
   letter-spacing: -0.01em;
 }
 
-// 首屏内容
+// 首屏内容：紧凑布局，确保tab可见
 .first-screen {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 8px;
   margin-bottom: 0;
+  padding: 0;
+  background: transparent;
 }
 
-// 沉浸式头部：带 Jebsen 水印
+// 简洁头部：参考图片排版，带多个Jebsen水印
 .premium-header {
   background-color: var(--porsche-black);
-  background-image: 
-    radial-gradient(circle at 92% 12%, rgba(148, 114, 74, 0.12) 0%, transparent 40%),
-    url("data:image/svg+xml,%3Csvg width='240' height='140' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='30' y='70' font-family='Arial, sans-serif' font-size='28' font-weight='900' fill='rgba(255,255,255,0.07)' transform='rotate(-15 30 70)' letter-spacing='3'%3EJEBSEN%3C/text%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-position: 0 0;
-  padding: 12px 16px 45px; // 压缩上下内边距
+  padding: 14px 16px;
+  padding-bottom: 50px; // 为悬浮的手机号卡片留出空间
   color: white;
   position: relative;
+  border-radius: 6px;
+  margin-bottom: 0;
+  z-index: 1;
   overflow: hidden;
+}
 
-  // 主水印（右上角大号）
-  &::before {
-    content: "JEBSEN";
-    position: absolute;
-    right: -10px;
-    top: 10px;
-    font-size: 48px;
-    font-weight: 900;
-    color: rgba(255, 255, 255, 0.07);
-    transform: rotate(-15deg);
-    pointer-events: none;
-    letter-spacing: 4px;
-    z-index: 0;
-  }
+// 多个Jebsen水印背景 - 铺满背景，不重叠（增强可见度）
+.watermark-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+  // 使用SVG创建重复的JEBSEN水印图案（增强透明度）
+  background-image: url("data:image/svg+xml,%3Csvg width='180' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='10' y='50' font-family='Arial, sans-serif' font-size='28' font-weight='900' fill='rgba(255,255,255,0.08)' transform='rotate(-15 10 50)' letter-spacing='4'%3EJEBSEN%3C/text%3E%3Ctext x='100' y='50' font-family='Arial, sans-serif' font-size='28' font-weight='900' fill='rgba(255,255,255,0.08)' transform='rotate(-15 100 50)' letter-spacing='4'%3EJEBSEN%3C/text%3E%3Ctext x='10' y='90' font-family='Arial, sans-serif' font-size='28' font-weight='900' fill='rgba(255,255,255,0.08)' transform='rotate(-15 10 90)' letter-spacing='4'%3EJEBSEN%3C/text%3E%3Ctext x='100' y='90' font-family='Arial, sans-serif' font-size='28' font-weight='900' fill='rgba(255,255,255,0.08)' transform='rotate(-15 100 90)' letter-spacing='4'%3EJEBSEN%3C/text%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-position: 0 0;
+  background-size: 160px 80px;
 }
 
 .header-main {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
+  gap: 12px;
   position: relative;
-  z-index: 1;
+  z-index: 2; // 确保在水印之上
+}
+
+// 头像区域
+.avatar-wrapper {
+  flex-shrink: 0;
+}
+
+.avatar-circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.avatar-text {
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+}
+
+// 右侧信息区域
+.header-info-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
 }
 
 .user-name-row {
   display: flex;
   align-items: center;
-  gap: 10px;
   width: 100%;
 
   h1 {
     margin: 0;
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 600;
     color: white;
-    flex: 1;
+    line-height: 1.2;
   }
+}
+
+.user-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .oneid-pill {
@@ -1963,7 +2014,7 @@ onMounted(async () => {
   padding: 1px 6px;
   border-radius: 2px;
   flex-shrink: 0;
-  margin-left: auto;
+  // margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 3px;
@@ -1974,12 +2025,12 @@ onMounted(async () => {
 }
 
 .header-tags {
-  margin-top: 10px;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
   position: relative;
   z-index: 1;
+  margin-top: 2px;
 }
 
 .header-tags span {
@@ -2019,16 +2070,16 @@ onMounted(async () => {
   color: white;
 }
 
-// 手机号区域：极致负边距嵌入头部
+// 手机号区域：悬浮在黑色头部之上（紧凑版）
 .phone-card {
-  margin: -35px 12px 0;
+  margin: -40px 16px 0px; // 负边距向上移动，悬浮在头部底部
   background: white;
-  border-radius: 4px;
-  border: 1px solid var(--border-color);
-  padding: 12px;
-  box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.12);
+  border-radius: 6px;
+  border: none;
+  padding: 8px 12px;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1); // 阴影，突出悬浮效果
   position: relative;
-  z-index: 10;
+  z-index: 10; // 确保在头部之上
 }
 
 .phone-entry {
@@ -2040,39 +2091,46 @@ onMounted(async () => {
 .phone-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-}
-
-.num-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  gap: 6px;
+  margin-bottom: 4px;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
 }
 
 .num-val {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--porsche-black);
   font-family: ui-monospace, monospace;
+  letter-spacing: 0.3px;
+  line-height: 1.2;
+  min-width: 110px; // 固定最小宽度，确保号码列对齐
+  flex-shrink: 0;
 
   &.is-secondary {
     color: var(--text-sub);
-    font-size: 15px;
+    font-size: 14px;
   }
 }
 
 .num-tags {
   display: flex;
-  gap: 4px;
+  gap: 2px;
+  flex-wrap: wrap;
+  flex: 1;
+  align-items: center;
 }
 
 .n-tag {
-  font-size: 9px;
-  padding: 1px 5px;
+  font-size: 7px;
+  padding: 1px 3px;
   border-radius: 2px;
   border: 1px solid var(--border-color);
   color: var(--text-sub);
   white-space: nowrap;
+  line-height: 1.1;
 
   &.active {
     color: var(--accent-gold);
@@ -2082,60 +2140,78 @@ onMounted(async () => {
 }
 
 .edit-icon {
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
   padding: 2px;
-  opacity: 0.8;
+  opacity: 0.7;
+  color: #1989fa;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+  
+  &:active {
+    opacity: 1;
+  }
 }
 
-// 内容板块
+.phone-divider {
+  height: 1px;
+  background: #F1F5F9;
+  margin: 4px 0;
+}
+
+// 内容板块：统一间距和分隔（紧凑版）
 .container {
-  padding: 0 16px 6px 16px;
-  margin-bottom: 0; // 最后一个 container 不需要底部间距
+  padding: 0;
+  margin-bottom: 8px;
+  background: white;
+  border-radius: 6px;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
 }
 
 .block-h {
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--accent-gold);
-  text-transform: uppercase;
-  margin: 16px 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  padding: 8px 14px;
+  margin: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  background: #fff;
 }
 
 .block-h .title-text {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex: 1;
-
-  &::after {
-    content: "";
-    flex: 1;
-    height: 1px;
-    background: var(--border-color);
-  }
+  font-weight: 600;
 }
 
 .block-more {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--text-sub);
   font-weight: 400;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   margin-left: 8px;
   text-transform: none;
+  transition: color 0.2s;
+  
+  &:active {
+    color: var(--accent-gold);
+  }
 }
 
-// 资产档案
+// 资产档案：简化样式
 .asset-box {
-  background: white;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
   overflow: hidden;
 }
 
@@ -2143,12 +2219,11 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: 1fr 1.3fr 1.8fr 40px;
   align-items: center;
-  padding: 10px 16px;
-  border-bottom: 1px solid #F1F5F9;
-  gap: 12px;
+  padding: 8px 14px;
+  gap: 10px;
 
-  &:last-child {
-    border-bottom: none;
+  &:not(:last-child) {
+    margin-bottom: 4px;
   }
 }
 
@@ -2161,12 +2236,12 @@ onMounted(async () => {
 
 .model-name {
   font-weight: 400;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-main);
 }
 
 .plate-val {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--accent-gold);
   letter-spacing: 0.5px;
@@ -2179,45 +2254,48 @@ onMounted(async () => {
 }
 
 .status-text {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-sub);
   text-align: right;
   cursor: pointer;
 }
 
-// 账户权益
+// 账户权益：简化样式（紧凑版）
 .asset-coupon-box {
-  background: #FCFAF6;
-  border: 1px dashed var(--accent-gold);
-  padding: 8px 16px;
+  background: #fff;
+  border: none;
+  padding: 8px 14px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-radius: 4px;
+  border-radius: 0;
+  margin: 0;
 }
 
 .asset-coupon-name {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
 
   small {
     font-weight: normal;
     color: var(--text-sub);
-    margin-left: 4px;
+    margin-left: 3px;
+    font-size: 10px;
   }
 }
 
 .asset-coupon-amount {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
   color: var(--accent-gold);
 }
 
-// 画像标签
+// 画像标签：统一间距（紧凑版）
 .tags-list-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
+  padding: 8px 14px;
 }
 
 .tag-item-custom {
@@ -2237,34 +2315,31 @@ onMounted(async () => {
   font-size: 11px;
 }
 
-// 基础档案网格
+// 基础档案网格：简化样式
 .info-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border: none;
+  border-radius: 0;
   overflow: hidden;
+  padding: 0;
+  gap: 0;
 }
 
 .info-node {
-  background: white;
-  padding: 10px 4px;
+  background: transparent;
+  padding: 8px 6px;
   text-align: center;
-  border-right: 1px solid var(--border-color);
-
-  &:last-child {
-    border-right: none;
-  }
 }
 
 .node-l {
-  font-size: 9px;
+  font-size: 10px;
   color: var(--text-sub);
   margin-bottom: 2px;
 }
 
 .node-v {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -2275,7 +2350,8 @@ onMounted(async () => {
   left: 0;
   width: 100%;
   background: white;
-  border-top: 1px solid var(--border-color);
+  border-top: none;
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.08);
   display: flex;
   justify-content: space-around;
   align-items: center;
@@ -2293,41 +2369,19 @@ onMounted(async () => {
   }
 }
 
-// 姓名卡片（名片样式优化 - 大厂风格）
+// 姓名卡片（简化样式）
 .info-card.name-card {
   background: #ffffff !important;
-  border-radius: 8px; // 减小圆角
+  border-radius: 6px;
   overflow: hidden;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06); // 减小阴影
-  border: 1px solid #ebedf0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: none;
   position: relative;
   
-  // 左侧装饰条
-  &::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: var(--van-tag-primary-color);
-  }
-  
   .name-section {
-    padding: 6px 10px; // 进一步减少内边距
-    padding-bottom: 6px;
+    padding: 12px 16px;
+    padding-bottom: 12px;
     position: relative;
-    
-    // 分隔线，从蓝色装饰条右边开始
-    &::after {
-      content: '';
-      position: absolute;
-      left: 4px; // 从蓝色装饰条右边开始
-      right: 0;
-      bottom: 0;
-      height: 1px;
-      background: #ebedf0;
-    }
     
     .name-row {
       display: flex;
@@ -2435,10 +2489,10 @@ onMounted(async () => {
   }
   
   .card-content-wrapper {
-    padding: 6px 10px; // 进一步减少内边距
+    padding: 12px 16px;
     display: flex;
     flex-direction: column;
-    gap: 6px; // 进一步减少间距
+    gap: 10px;
     
     .phone-section {
       .phone-row {
@@ -2553,21 +2607,21 @@ onMounted(async () => {
 }
 
 
-// 优惠券卡片
+// 优惠券卡片：简化样式
 .coupon-card {
   cursor: pointer;
-  transition: all 0.2s;
+  transition: opacity 0.2s;
   
   &:active {
-    transform: scale(0.98);
+    opacity: 0.8;
   }
   
   .coupon-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 5px 10px; // 减少内边距
-    border-bottom: 1px solid #ebedf0;
+    padding: 12px 16px;
+    background: #fafafa;
     
     .coupon-title {
       font-size: 12px; // 减小字体
@@ -2582,9 +2636,9 @@ onMounted(async () => {
   }
   
   .coupon-info {
-    padding: 6px 10px; // 减少内边距
+    padding: 12px 16px;
     display: flex;
-    gap: 10px; // 减少间距
+    gap: 12px;
     flex-wrap: nowrap;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -2617,14 +2671,15 @@ onMounted(async () => {
   }
 }
 
-// 车辆卡片
+// 车辆卡片：统一样式
 .vehicle-card {
   .card-header {
-    padding: 5px 10px; // 减少内边距
+    padding: 12px 16px;
+    background: #fafafa;
   }
   
   .vehicle-list {
-    padding: 6px 10px; // 减少内边距
+    padding: 12px 16px;
     
     .vehicle-item {
       padding: 6px 8px; // 减少内边距
@@ -2741,14 +2796,15 @@ onMounted(async () => {
   }
 }
 
-// 标签卡片
+// 标签卡片：统一样式
 .tags-card {
   .card-header {
-    padding: 5px 10px; // 减少内边距
+    padding: 12px 16px;
+    background: #fafafa;
   }
   
   .tags-content {
-    padding: 6px 10px; // 减少内边距
+    padding: 12px 16px;
     
     .tags-list {
       display: flex;
@@ -3158,20 +3214,22 @@ onMounted(async () => {
 
 // Tab 容器（统一tab和内容的视觉连接）
 .tab-container {
-  margin-top: 16px;
+  margin-top: 0;
+  margin-bottom: 8px;
   background: white;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border: none;
+  border-radius: 6px;
   overflow: hidden;
   padding: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 // Tab 导航样式（与内容区域统一）
 .tab-nav-wrapper {
   display: flex;
   align-items: stretch;
-  background: var(--bg-slate);
-  border-bottom: 1px solid var(--border-color);
+  background: #fafafa;
+  border-bottom: none;
   margin: 0;
   
   .tab-nav-item {
@@ -3182,7 +3240,7 @@ onMounted(async () => {
     cursor: pointer;
     transition: all 0.2s;
     text-align: center;
-    padding: 10px 8px;
+    padding: 8px 6px;
     user-select: none;
     position: relative;
     background: transparent;
@@ -3213,11 +3271,6 @@ onMounted(async () => {
     
     &:active {
       opacity: 0.8;
-    }
-    
-    // 分隔线
-    &:not(:last-child) {
-      border-right: 1px solid var(--border-color);
     }
   }
 }
@@ -3363,6 +3416,7 @@ onMounted(async () => {
   border-bottom: 1px solid var(--border-color);
   overflow: hidden;
   width: 100%;
+  background: white;
 }
 
 .alert-bar {
@@ -3396,7 +3450,7 @@ onMounted(async () => {
   }
 
   :deep(.van-notice-bar__left-icon) {
-    font-size: 9px;
+    font-size: 10px;
     margin-right: 3px;
   }
 }
