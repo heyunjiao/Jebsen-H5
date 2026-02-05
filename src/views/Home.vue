@@ -2,26 +2,31 @@
   <div class="home-container">
     <!-- 顶部状态栏系统 -->
     <div class="alert-system">
-      <!-- 冲突提示（最顶部优先显示） -->
-      <div
+      <!-- 冲突提示（最顶部优先显示）- 弹幕滚动 -->
+      <van-notice-bar
         v-if="customerStore.profile?.nameMobileConflict && customerStore.profile.nameMobileConflict.length > 0"
-        class="alert-item alert-orange conflict-alert-top"
+        left-icon="warning-o"
+        color="#B45309"
+        background="#FFFBEB"
+        scrollable
+        class="alert-bar conflict-alert-bar"
         @click="showConflictResolver = true"
       >
-        <span>⚠️ 该顾客疑似存在多条记录冲突，请核实身份信息</span>
-      </div>
+        ⚠️ 该顾客疑似存在多条记录冲突，请核实身份信息
+      </van-notice-bar>
 
-      <!-- 最新操作这个客户的信息提示，点击弹窗显示操作日志 -->
-      <div
+      <!-- 最新操作这个客户的信息提示，点击弹窗显示操作日志 - 弹幕滚动 -->
+      <van-notice-bar
         v-if="latestOperationText || customerStore.profile?.latestOperation"
-        class="alert-item alert-blue operation-alert"
+        left-icon="info-o"
+        color="#94724A"
+        background="#FEF9F3"
+        scrollable
+        class="alert-bar operation-alert-bar"
         @click="showOperationLogDialog = true"
       >
-        <span>ℹ️ {{ latestOperationText || '该顾客已被 Rebecca Z. 人工更新' }}</span>
-        <span v-if="customerStore.profile?.latestOperation?.operationTime">
-          {{ formatOperationTime(customerStore.profile.latestOperation.operationTime) }} ›
-        </span>
-      </div>
+        {{ latestOperationText || '该顾客已被 Rebecca Z. 人工更新' }}<span v-if="customerStore.profile?.latestOperation?.operationTime" class="operation-time"> {{ formatOperationTime(customerStore.profile.latestOperation.operationTime) }} ›</span>
+      </van-notice-bar>
     </div>
 
 
@@ -41,6 +46,7 @@
             <h1>{{ customerStore.profile.name?.value || 'XX' }}</h1>
             <span class="oneid-pill">ONEID：{{ customerStore.profile.id }}</span>
             <span v-if="customerStore.profile?.customerType?.value" class="customer-type-badge">
+              <van-icon :name="customerTypeIcon" />
               {{ customerStore.profile.customerType.value === '个人' ? '个人' : customerStore.profile.customerType.value === '公司' ? '公司' : String(customerStore.profile.customerType.value) }}
             </span>
           </div>
@@ -50,7 +56,10 @@
             v-for="(tag, index) in displayedHeaderTags" 
             :key="index"
             :class="getHeaderTagClass(tag)"
+            :style="{ cursor: isOpportunityTag(tag) ? 'pointer' : 'default' }"
+            @click="isOpportunityTag(tag) ? (showOpportunityDialog = true) : undefined"
           >
+            <van-icon v-if="getTagIcon(tag)" :name="getTagIcon(tag)" class="tag-icon" />
             {{ tag }}
           </span>
         </div>
@@ -185,7 +194,7 @@
         </div>
       </div>
 
-      <!-- Tab 切换（维保、保险） -->
+      <!-- Tab 切换（维保、保险、沟通记录） -->
       <div class="container tab-container">
         <div class="tab-nav-wrapper">
           <div 
@@ -202,6 +211,13 @@
           >
             保险合同
           </div>
+          <div 
+            class="tab-nav-item" 
+            :class="{ active: activeTab === 'communication' }"
+            @click="activeTab = 'communication'"
+          >
+            沟通记录
+          </div>
         </div>
         
         <!-- Tab 内容 -->
@@ -211,6 +227,9 @@
           </div>
           <div v-if="activeTab === 'insurance'" class="tab-content">
             <Maintenance />
+          </div>
+          <div v-if="activeTab === 'communication'" class="tab-content">
+            <CommunicationRecords />
           </div>
         </div>
       </div>
@@ -775,6 +794,7 @@ import { useCustomerStore } from '@/stores/customer'
 import C360Field from '@/components/C360Field.vue'
 import Maintenance from '@/views/Maintenance.vue'
 import MaintenanceRecords from '@/views/MaintenanceRecords.vue'
+import CommunicationRecords from '@/views/CommunicationRecords.vue'
 import ConflictResolver from '@/components/business/ConflictResolver.vue'
 import PlatformFlow from '@/components/business/PlatformFlow.vue'
 import MobileEditor from '@/components/business/MobileEditor.vue'
@@ -939,6 +959,29 @@ const getHeaderTagClass = (tag: string) => {
   }
   // 客户类型（个人客户、公司客户）和其他所有商机类型使用 biz-badge 样式（深灰半透明背景，白色文字）
   return 'biz-badge'
+}
+
+// 判断是否为商机标签
+const isOpportunityTag = (tag: string): boolean => {
+  // VIP 车主不是商机标签（从 profile.tags 中提取的）
+  if (tag.includes('VIP') && tag.includes('车主')) {
+    return false
+  }
+  // 其他标签都是商机标签（从 opportunities 中提取的，包括钻石客户）
+  return true
+}
+
+// 获取标签图标
+const getTagIcon = (tag: string): string | null => {
+  // 钻石客户显示钻石图标
+  if (tag === '钻石客户') {
+    return 'gem-o'
+  }
+  // VIP 车主显示皇冠图标
+  if (tag.includes('VIP') && tag.includes('车主')) {
+    return 'medal-o'
+  }
+  return null
 }
 
 // 获取标签的自定义样式类
@@ -1851,13 +1894,17 @@ onMounted(async () => {
 // 沉浸式头部：带 Jebsen 水印
 .premium-header {
   background-color: var(--porsche-black);
-  background-image: radial-gradient(circle at 92% 12%, rgba(148, 114, 74, 0.12) 0%, transparent 40%);
+  background-image: 
+    radial-gradient(circle at 92% 12%, rgba(148, 114, 74, 0.12) 0%, transparent 40%),
+    url("data:image/svg+xml,%3Csvg width='240' height='140' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='30' y='70' font-family='Arial, sans-serif' font-size='28' font-weight='900' fill='rgba(255,255,255,0.07)' transform='rotate(-15 30 70)' letter-spacing='3'%3EJEBSEN%3C/text%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-position: 0 0;
   padding: 12px 16px 45px; // 压缩上下内边距
   color: white;
   position: relative;
   overflow: hidden;
 
-  // Jebsen 水印样式
+  // 主水印（右上角大号）
   &::before {
     content: "JEBSEN";
     position: absolute;
@@ -1865,10 +1912,11 @@ onMounted(async () => {
     top: 10px;
     font-size: 48px;
     font-weight: 900;
-    color: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.07);
     transform: rotate(-15deg);
     pointer-events: none;
     letter-spacing: 4px;
+    z-index: 0;
   }
 }
 
@@ -1916,6 +1964,13 @@ onMounted(async () => {
   border-radius: 2px;
   flex-shrink: 0;
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  
+  :deep(.van-icon) {
+    font-size: 12px;
+  }
 }
 
 .header-tags {
@@ -1927,6 +1982,17 @@ onMounted(async () => {
   z-index: 1;
 }
 
+.header-tags span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.header-tags .tag-icon {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
 .vip-tag {
   background: var(--accent-gold);
   font-size: 10px;
@@ -1936,12 +2002,20 @@ onMounted(async () => {
   color: #000;
 }
 
+.vip-tag .tag-icon {
+  color: #000;
+}
+
 .biz-badge {
   font-size: 10px;
   padding: 2px 8px;
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+.biz-badge .tag-icon {
   color: white;
 }
 
@@ -2001,9 +2075,9 @@ onMounted(async () => {
   white-space: nowrap;
 
   &.active {
-    color: #059669;
-    border-color: #059669;
-    background: #F0FDF4;
+    color: var(--accent-gold);
+    border-color: var(--accent-gold);
+    background: rgba(148, 114, 74, 0.08);
   }
 }
 
@@ -2016,7 +2090,7 @@ onMounted(async () => {
 
 // 内容板块
 .container {
-  padding: 0 16px 12px 16px;
+  padding: 0 16px 6px 16px;
   margin-bottom: 0; // 最后一个 container 不需要底部间距
 }
 
@@ -2046,7 +2120,7 @@ onMounted(async () => {
 }
 
 .block-more {
-  font-size: 9px;
+  font-size: 10px;
   color: var(--text-sub);
   font-weight: 400;
   cursor: pointer;
@@ -2067,7 +2141,7 @@ onMounted(async () => {
 
 .asset-row {
   display: grid;
-  grid-template-columns: 1fr 1.5fr 1fr 40px;
+  grid-template-columns: 1fr 1.3fr 1.8fr 40px;
   align-items: center;
   padding: 10px 16px;
   border-bottom: 1px solid #F1F5F9;
@@ -3108,10 +3182,11 @@ onMounted(async () => {
     cursor: pointer;
     transition: all 0.2s;
     text-align: center;
-    padding: 8px 12px;
+    padding: 10px 8px;
     user-select: none;
     position: relative;
     background: transparent;
+    min-width: 0;
     
     // 底部指示线
     &::after {
@@ -3286,39 +3361,84 @@ onMounted(async () => {
 // 顶部状态栏系统
 .alert-system {
   border-bottom: 1px solid var(--border-color);
+  overflow: hidden;
+  width: 100%;
 }
 
-.alert-item {
-  padding: 8px 16px;
-  font-size: 11px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.alert-bar {
+  width: 100%;
   cursor: pointer;
   transition: opacity 0.2s;
+  --van-notice-bar-height: 20px;
+  --van-notice-bar-font-size: 10px;
 
   &:active {
     opacity: 0.8;
   }
+
+  :deep(.van-notice-bar) {
+    width: 100%;
+    padding: 2px 8px;
+    font-size: var(--van-notice-bar-font-size);
+    font-weight: 600;
+    min-height: auto;
+    height: 20px;
+    line-height: 1.2;
+  }
+
+  :deep(.van-notice-bar__content) {
+    width: 100%;
+    line-height: 1.2;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    font-size: var(--van-notice-bar-font-size);
+  }
+
+  :deep(.van-notice-bar__left-icon) {
+    font-size: 9px;
+    margin-right: 3px;
+  }
 }
 
-.alert-orange {
-  background: #FFFBEB;
-  color: var(--alert-orange);
-}
-
-.alert-blue {
-  background: #F0F7FF;
-  color: var(--alert-blue);
-  border-top: 1px solid #DBEAFE;
-  justify-content: space-between;
-  // 保持蓝色用于信息提示，但使用更柔和的蓝色背景
-}
-
-.conflict-alert-top {
-  margin-bottom: 0;
+// 冲突提示样式 - 橙色背景
+.conflict-alert-bar {
   border-bottom: 1px solid var(--border-color);
+
+  :deep(.van-notice-bar) {
+    background: #FFFBEB;
+    color: #B45309;
+  }
+
+  :deep(.van-notice-bar__left-icon) {
+    color: #B45309;
+  }
+}
+
+// 操作提示样式 - 琥珀金浅色背景，与冲突提示区分
+.operation-alert-bar {
+  border-top: 1px solid #F5E6D3;
+  border-bottom: 1px solid var(--border-color);
+
+  :deep(.van-notice-bar) {
+    background: #FEF9F3;
+    color: #94724A;
+  }
+
+  :deep(.van-notice-bar__left-icon) {
+    color: #94724A;
+  }
+
+  .operation-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .operation-time {
+    margin-left: 4px;
+    font-weight: 500;
+  }
 }
 
 .multi-source-alert {
@@ -3346,11 +3466,6 @@ onMounted(async () => {
     white-space: nowrap;
     flex-shrink: 0;
   }
-}
-
-.operation-alert {
-  margin-bottom: 0;
-  border-bottom: 1px solid var(--border-color);
 }
 
 .important-info {
