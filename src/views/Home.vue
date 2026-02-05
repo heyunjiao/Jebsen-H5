@@ -53,14 +53,22 @@
           <!-- 右侧信息 -->
           <div class="header-info-wrapper">
             <div class="user-name-row">
-              <h1>{{ customerStore.profile.name?.value || 'XX' }}</h1>
-            </div>
-            <div class="user-meta-row">
-              <span class="oneid-pill">ONEID：{{ customerStore.profile.id }}</span>
-              <span v-if="customerStore.profile?.customerType?.value" class="customer-type-badge">
-                <van-icon :name="customerTypeIcon" />
-                {{ customerStore.profile.customerType.value === '个人' ? '个人' : customerStore.profile.customerType.value === '公司' ? '公司' : String(customerStore.profile.customerType.value) }}
-              </span>
+              <div class="name-left">
+                <h1>{{ customerStore.profile.name?.value || 'XX' }}</h1>
+                <!-- 溯源追踪 icon：点击查看原平台溯源信息 -->
+                <van-icon
+                  name="cluster-o"
+                  class="trace-icon"
+                  @click="showPlatformFlow = true"
+                />
+              </div>
+              <div class="meta-right">
+                <span class="oneid-pill">ONEID：{{ customerStore.profile.id }}</span>
+                <span v-if="customerStore.profile?.customerType?.value" class="customer-type-badge">
+                  <van-icon :name="customerTypeIcon" />
+                  {{ customerStore.profile.customerType.value === '个人' ? '个人' : customerStore.profile.customerType.value === '公司' ? '公司' : String(customerStore.profile.customerType.value) }}
+                </span>
+              </div>
             </div>
             <div class="header-tags">
               <span 
@@ -121,7 +129,7 @@
       <!-- 资产档案（车辆信息） -->
       <div class="container">
         <div class="block-h">
-          <span class="title-text">旗下资产 ({{ customerStore.vehicles.length }})</span>
+          <span class="title-text">车辆信息 ({{ customerStore.vehicles.length }})</span>
           <span class="block-more" @click="showVehicleDialog = true">查看更多 ›</span>
         </div>
         <div class="asset-box">
@@ -150,7 +158,7 @@
       <!-- 账户权益 -->
       <div class="container" v-if="nearestExpiringAsset">
         <div class="block-h">
-          <span class="title-text">账户权益</span>
+          <span class="title-text">资产信息</span>
           <span class="block-more" @click="handleCouponCardClick">查看更多 ›</span>
         </div>
         <div class="asset-coupon-box">
@@ -184,6 +192,7 @@
       <div class="container">
         <div class="block-h">
           <span class="title-text">基础档案</span>
+          <span class="block-more" @click="showPlatformFlow = true">查看更多 ›</span>
         </div>
         <div class="info-grid">
           <div class="info-node">
@@ -1977,21 +1986,41 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   width: 100%;
+  justify-content: space-between;
 
-  h1 {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 600;
-    color: white;
-    line-height: 1.2;
+  .name-left {
+    display: flex;
+    align-items: center;
+
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: white;
+      line-height: 1.2;
+    }
+
+    .trace-icon {
+      margin-left: 6px;
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.9);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: opacity 0.2s, transform 0.2s;
+
+      &:active {
+        opacity: 0.7;
+        transform: scale(0.9);
+      }
+    }
   }
-}
 
-.user-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
+  .meta-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
 }
 
 .oneid-pill {
