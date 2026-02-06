@@ -192,7 +192,7 @@
       <div class="container">
         <div class="block-h">
           <span class="title-text">基础档案</span>
-          <span class="block-more" @click="showPlatformFlow = true">查看更多 ›</span>
+          <span class="block-more" @click="handleOpenBasicInfoEditor">查看更多 ›</span>
         </div>
         <div class="info-grid">
           <div class="info-node">
