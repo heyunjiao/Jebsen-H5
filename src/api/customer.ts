@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
-import type { CustomerProfile, TagPool, SourceDetail, MobileItem, MobileData, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, ConflictResolution, Appointment, PlatformSource, Opportunity, OperationLog, InsuranceRecord } from '@/types/customer'
+import type { CustomerProfile, TagPool, SourceDetail, MobileItem, MobileData, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, ConflictResolution, Appointment, PlatformSource, Opportunity, OperationLog, InsuranceRecord, MarketingCampaign } from '@/types/customer'
 import { mockRequestInterceptor } from '@/mock'
 
 // API 响应基础类型
@@ -10,7 +10,7 @@ export interface ApiResponse<T> {
 }
 
 // 导出类型供外部使用
-export type { CustomerProfile, TagPool, SourceDetail, MobileItem, MobileData, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, ConflictResolution, Appointment, PlatformSource, Opportunity, OperationLog, InsuranceRecord }
+export type { CustomerProfile, TagPool, SourceDetail, MobileItem, MobileData, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, ConflictResolution, Appointment, PlatformSource, Opportunity, OperationLog, InsuranceRecord, MarketingCampaign }
 
 // 创建 axios 实例
 const request = axios.create({
@@ -344,6 +344,17 @@ export const customerApi = {
     pageSize?: number
   }): Promise<ApiResponse<{ list: InsuranceRecord[]; hasMore: boolean; total: number }>> => {
     return request.get('/customer/insurance/records', {
+      params,
+    })
+  },
+
+  // 获取线下活动记录（支持分页）
+  getMarketingCampaigns: (params?: {
+    customerId?: string
+    page?: number
+    pageSize?: number
+  }): Promise<ApiResponse<{ list: MarketingCampaign[]; hasMore: boolean; total: number }>> => {
+    return request.get('/customer/marketing-campaigns', {
       params,
     })
   },

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { CustomerProfile, TagPool, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, ConflictResolution, Appointment, PlatformSource, Opportunity, OperationLog, InsuranceRecord } from '@/api/customer'
+import type { CustomerProfile, TagPool, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, ConflictResolution, Appointment, PlatformSource, Opportunity, OperationLog, InsuranceRecord, MarketingCampaign } from '@/api/customer'
 import { customerApi } from '@/api/customer'
 import { showLoadingToast, closeToast, showToast } from 'vant'
 
@@ -16,6 +16,7 @@ export const useCustomerStore = defineStore('customer', () => {
   const platformSources = ref<PlatformSource[]>([])
   const opportunities = ref<Opportunity[]>([])
   const operationLogs = ref<OperationLog[]>([])
+  const marketingCampaigns = ref<MarketingCampaign[]>([])
   const loading = ref(false)
 
   // 获取客户画像
@@ -665,6 +666,37 @@ export const useCustomerStore = defineStore('customer', () => {
     insuranceRecords.value = []
   }
 
+  // 获取线下活动记录（分页）
+  const fetchMarketingCampaignsPage = async (page: number = 1, pageSize: number = 5, customerId?: string): Promise<boolean> => {
+    try {
+      const res = await customerApi.getMarketingCampaigns({
+        customerId,
+        page,
+        pageSize,
+      })
+      if (res.code === 200) {
+        // 追加新数据到现有列表
+        if (page === 1) {
+          // 第一页，重置数据
+          marketingCampaigns.value = [...res.data.list]
+        } else {
+          // 后续页，追加数据
+          marketingCampaigns.value = [...marketingCampaigns.value, ...res.data.list]
+        }
+        return res.data.hasMore
+      }
+      return false
+    } catch (error: any) {
+      console.error('获取线下活动记录失败:', error)
+      return false
+    }
+  }
+
+  // 清空线下活动记录
+  const clearMarketingCampaigns = () => {
+    marketingCampaigns.value = []
+  }
+
   return {
     profile,
     tagPool,
@@ -677,6 +709,7 @@ export const useCustomerStore = defineStore('customer', () => {
     platformSources,
     opportunities,
     operationLogs,
+    marketingCampaigns,
     loading,
     fetchProfile,
     fetchTagPool,
@@ -684,6 +717,8 @@ export const useCustomerStore = defineStore('customer', () => {
     fetchInsuranceRecords,
     fetchInsuranceRecordsPage,
     clearInsuranceRecords,
+    fetchMarketingCampaignsPage,
+    clearMarketingCampaigns,
     fetchTransactions,
     fetchVehicles,
     fetchAssets,

@@ -197,6 +197,23 @@ export interface OperationLog {
   }
 }
 
+// 线下活动（Marketing Campaign）类型
+export interface MarketingCampaign {
+  id: string
+  campaignCode: string // 活动编码
+  campaignName: string // 活动名称
+  campaignType: string // 活动类型：试驾活动、新车发布会、车主聚会、品牌体验日、促销活动等
+  activityTime: string // 活动时间
+  activityDate: string // 活动日期
+  location?: string // 活动地点
+  status: string // 状态：已参加、已报名、已取消、已结束等
+  description?: string // 活动描述
+  organizer?: string // 组织者/门店
+  uploader?: string // 上传人
+  validExamples?: number // 有效例子
+  source?: string // 来源系统
+}
+
 // 客户画像数据类型
 export interface CustomerProfile {
   id: string

@@ -3,7 +3,7 @@
  * 不依赖 vite-plugin-mock，直接在 axios 层面拦截请求
  */
 import type { AxiosRequestConfig, AxiosResponse } from 'axios'
-import type { CustomerProfile, TagPool, MobileData, MobileItem, MaintenanceRecord, Appointment, PlatformSource, Opportunity, OperationLog, InsuranceRecord } from '@/types/customer'
+import type { CustomerProfile, TagPool, MobileData, MobileItem, MaintenanceRecord, Appointment, PlatformSource, Opportunity, OperationLog, InsuranceRecord, MarketingCampaign } from '@/types/customer'
 import { mockCustomerProfile, mockTagPool, mockRelationTagPool, mockMaintenanceRecords } from './data'
 import { normalizeInsuranceRecords, validateInsuranceRecords } from './rules'
 
@@ -289,6 +289,204 @@ export async function mockRequestInterceptor(
         },
       }
       console.log(`[Mock] 保险记录分页返回: 第${page}页, 每页${pageSize}条, 共${total}条, 返回${pageRecords.length}条, 还有更多: ${hasMore}`)
+    }
+    // GET /api/customer/marketing-campaigns
+    else if (method === 'get' && fullPath.includes('/customer/marketing-campaigns')) {
+      await delay(800)
+      
+      // 获取分页参数
+      const params = config.params || {}
+      const page = Number(params.page) || 1
+      const pageSize = Number(params.pageSize) || 5
+      
+      // 定义线下活动记录原始数据
+      const allMockMarketingCampaignsRaw: Partial<MarketingCampaign>[] = [
+        {
+          id: 'MC001',
+          campaignCode: 'CAM-2025-001',
+          campaignName: '保时捷911试驾体验日',
+          campaignType: '试驾活动',
+          activityTime: '2025-01-20 14:00:00',
+          activityDate: '2025-01-20',
+          location: '上海浦东店',
+          status: '已参加',
+          description: '客户参加了保时捷911试驾体验活动，对车辆性能非常满意',
+          organizer: '上海浦东店',
+          uploader: 'John Smith',
+          validExamples: 25,
+          source: 'CRM',
+        },
+        {
+          id: 'MC002',
+          campaignCode: 'CAM-2024-012',
+          campaignName: '2025年春季新车发布会',
+          campaignType: '新车发布会',
+          activityTime: '2024-12-15 19:00:00',
+          activityDate: '2024-12-15',
+          location: '上海闵行店',
+          status: '未参加',
+          description: '客户报名了2025年春季新车发布会，但最终未参加',
+          organizer: '上海闵行店',
+          uploader: 'Emily Johnson',
+          validExamples: 150,
+          source: 'BDC',
+        },
+        {
+          id: 'MC003',
+          campaignCode: 'CAM-2024-011',
+          campaignName: '保时捷车主聚会',
+          campaignType: '车主聚会',
+          activityTime: '2024-11-10 18:00:00',
+          activityDate: '2024-11-10',
+          location: '上海浦东店',
+          status: '已参加',
+          description: '客户参加了保时捷车主聚会，与其他车主交流用车心得',
+          organizer: '上海浦东店',
+          uploader: 'Michael Brown',
+          validExamples: 80,
+          source: 'CRM',
+        },
+        {
+          id: 'MC004',
+          campaignCode: 'CAM-2024-010',
+          campaignName: '品牌体验日',
+          campaignType: '品牌体验日',
+          activityTime: '2024-10-05 10:00:00',
+          activityDate: '2024-10-05',
+          location: '上海闵行店',
+          status: '已参加',
+          description: '客户参加了品牌体验日活动，体验了保时捷品牌文化',
+          organizer: '上海闵行店',
+          uploader: 'Sarah Williams',
+          validExamples: 60,
+          source: 'DMS',
+        },
+        {
+          id: 'MC005',
+          campaignCode: 'CAM-2024-009',
+          campaignName: '双十一促销活动',
+          campaignType: '促销活动',
+          activityTime: '2024-11-11 09:00:00',
+          activityDate: '2024-11-11',
+          location: '上海浦东店',
+          status: '未参加',
+          description: '客户报名参加了双十一促销活动，但最终未参加',
+          organizer: '上海浦东店',
+          uploader: 'David Jones',
+          validExamples: 500,
+          source: 'BDC',
+        },
+        {
+          id: 'MC006',
+          campaignCode: 'CAM-2024-008',
+          campaignName: 'Macan试驾专场',
+          campaignType: '试驾活动',
+          activityTime: '2024-09-20 15:00:00',
+          activityDate: '2024-09-20',
+          location: '上海闵行店',
+          status: '已参加',
+          description: '客户参加了Macan试驾专场活动',
+          organizer: '上海闵行店',
+          uploader: 'Lisa Davis',
+          validExamples: 30,
+          source: 'CRM',
+        },
+        {
+          id: 'MC007',
+          campaignCode: 'CAM-2024-007',
+          campaignName: '保时捷赛道日',
+          campaignType: '品牌体验日',
+          activityTime: '2024-08-15 08:00:00',
+          activityDate: '2024-08-15',
+          location: '上海浦东店',
+          status: '已参加',
+          description: '客户参加了保时捷赛道日活动，体验了赛道驾驶乐趣',
+          organizer: '上海浦东店',
+          uploader: 'Robert Miller',
+          validExamples: 100,
+          source: 'CRM',
+        },
+        {
+          id: 'MC008',
+          campaignCode: 'CAM-2024-006',
+          campaignName: 'Cayenne新车品鉴会',
+          campaignType: '新车发布会',
+          activityTime: '2024-07-25 19:30:00',
+          activityDate: '2024-07-25',
+          location: '上海闵行店',
+          status: '已参加',
+          description: '客户参加了Cayenne新车品鉴会',
+          organizer: '上海闵行店',
+          uploader: 'Jennifer Wilson',
+          validExamples: 120,
+          source: 'BDC',
+        },
+        {
+          id: 'MC009',
+          campaignCode: 'CAM-2024-005',
+          campaignName: '保时捷车主自驾游',
+          campaignType: '车主聚会',
+          activityTime: '2024-06-10 07:00:00',
+          activityDate: '2024-06-10',
+          location: '上海浦东店',
+          status: '未参加',
+          description: '客户报名了保时捷车主自驾游活动，但因时间冲突未参加',
+          organizer: '上海浦东店',
+          uploader: 'James Moore',
+          validExamples: 50,
+          source: 'CRM',
+        },
+        {
+          id: 'MC010',
+          campaignCode: 'CAM-2024-004',
+          campaignName: 'Panamera试驾体验',
+          campaignType: '试驾活动',
+          activityTime: '2024-05-18 14:00:00',
+          activityDate: '2024-05-18',
+          location: '上海闵行店',
+          status: '未参加',
+          description: '客户预约了Panamera试驾体验活动，但最终未参加',
+          organizer: '上海闵行店',
+          uploader: 'Patricia Taylor',
+          validExamples: 20,
+          source: 'DMS',
+        },
+      ]
+      
+      // 规范化数据（确保必填字段存在）
+      const allCampaigns: MarketingCampaign[] = allMockMarketingCampaignsRaw.map((item, index) => ({
+        id: item.id || `MC${String(index + 1).padStart(3, '0')}`,
+        campaignCode: item.campaignCode || `CAM-${new Date().getFullYear()}-${String(index + 1).padStart(3, '0')}`,
+        campaignName: item.campaignName || '未知活动',
+        campaignType: item.campaignType || '其他',
+        activityTime: item.activityTime || '',
+        activityDate: item.activityDate || item.activityTime?.split(' ')[0] || '',
+        location: item.location || '',
+        status: item.status || '未参加',
+        description: item.description,
+        organizer: item.organizer,
+        uploader: item.uploader,
+        validExamples: item.validExamples,
+        source: item.source,
+      }))
+      
+      // 计算分页
+      const total = allCampaigns.length
+      const startIndex = (page - 1) * pageSize
+      const endIndex = startIndex + pageSize
+      const pageCampaigns = allCampaigns.slice(startIndex, endIndex)
+      const hasMore = endIndex < total
+      
+      mockResponse = {
+        code: 200,
+        message: 'success',
+        data: {
+          list: pageCampaigns,
+          hasMore,
+          total,
+        },
+      }
+      console.log(`[Mock] 线下活动记录分页返回: 第${page}页, 每页${pageSize}条, 共${total}条, 返回${pageCampaigns.length}条, 还有更多: ${hasMore}`)
     }
     // PUT /api/customer/maintenance/records/:id/tags
     else if (method === 'put' && fullPath.includes('/customer/maintenance/records/') && fullPath.includes('/tags')) {

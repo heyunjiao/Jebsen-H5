@@ -238,6 +238,13 @@
           >
             沟通记录
           </div>
+          <div 
+            class="tab-nav-item" 
+            :class="{ active: activeTab === 'marketing' }"
+            @click="activeTab = 'marketing'"
+          >
+            线下活动
+          </div>
         </div>
         
         <!-- Tab 内容 -->
@@ -250,6 +257,9 @@
           </div>
           <div v-if="activeTab === 'communication'" class="tab-content">
             <CommunicationRecords />
+          </div>
+          <div v-if="activeTab === 'marketing'" class="tab-content">
+            <MarketingCampaigns />
           </div>
         </div>
       </div>
@@ -815,6 +825,7 @@ import C360Field from '@/components/C360Field.vue'
 import Maintenance from '@/views/Maintenance.vue'
 import MaintenanceRecords from '@/views/MaintenanceRecords.vue'
 import CommunicationRecords from '@/views/CommunicationRecords.vue'
+import MarketingCampaigns from '@/views/MarketingCampaigns.vue'
 import ConflictResolver from '@/components/business/ConflictResolver.vue'
 import PlatformFlow from '@/components/business/PlatformFlow.vue'
 import MobileEditor from '@/components/business/MobileEditor.vue'
