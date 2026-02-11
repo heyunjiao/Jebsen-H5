@@ -406,13 +406,95 @@ export const mockCustomerProfile: CustomerProfile = {
   ] as PlatformSource[],
 }
 
+// Mock 公司账户数据
+export const mockCompanyProfile: CustomerProfile = {
+  id: 'COMP001',
+  name: { value: '上海喜茶公司', isConflict: false },
+  customerType: { value: '公司', isConflict: false },
+  latestOperation: { operator: 'Rebecca Z.', operationType: '人工更新', operationTime: '2025-01-15 10:00:00' },
+  handlers: [
+    {
+      id: 'H001',
+      name: '张三',
+      role: '采购主管',
+      mobile: '13811112222',
+      age: 42,
+      gender: '男',
+      city: '上海',
+      tags: ['高价值', '餐饮行业', 'VIP车主', '商务合作伙伴'],
+      nameMobileConflict: [
+        { id: 'conf_h1_1', name: '张三(二级部门)', mobile: '13811112222', origin: 'DMS', updateTime: '2025-01-12 10:00:00' }
+      ],
+      latestOperation: { operator: 'System', operationType: '同步经办人', operationTime: '2025-01-20 09:00:00' },
+      vehicles: [
+        { id: 'V_H001_1', vehicleModel: 'Cayenne Turbo', licensePlate: '沪A66666', vin: 'WP0ZZZ92ZDS123456', status: '自用', source: 'DMS' }
+      ]
+    },
+    {
+      id: 'H002',
+      name: '李四',
+      role: '财务经理',
+      mobile: '13833334444',
+      age: 38,
+      gender: '男',
+      city: '杭州',
+      tags: ['精密严谨', '财务背景', '老客户'],
+      latestOperation: { operator: 'Admin', operationType: '手动录入', operationTime: '2025-01-22 15:30:00' }
+    },
+    {
+      id: 'H003',
+      name: '王五',
+      role: '行政总监',
+      mobile: '13855556666',
+      age: 45,
+      gender: '男',
+      city: '上海',
+      tags: ['大客户', '高价值', 'VIP车主', '决策者'],
+      latestOperation: { operator: 'DMS', operationType: '自动化更新', operationTime: '2025-01-25 11:15:00' },
+      vehicles: [
+        { id: 'V_H003_1', vehicleModel: 'Taycan Turbo S', licensePlate: '沪A88888', vin: 'WP0ZZZ99ZDS123456', status: '自用', source: 'DMS' },
+        { id: 'V_H003_2', vehicleModel: 'Panamera', licensePlate: '沪B99999', vin: 'WP0ZZZ99ZDS654321', status: '自用', source: 'DMS' }
+      ],
+      assets: [
+        { id: 'A_H003_1', type: 'voucher', name: '大客户礼包', amount: 50000, status: '未使用', validFrom: '2025-01-01', validTo: '2026-01-01', source: 'CRM' }
+      ],
+      opportunities: [
+        { id: 'O_H003_1', type: 'VIP 车主', triggerRule: '高价值', priority: '高', status: '待处理', createTime: '2025-01-16 10:00:00' },
+        { id: 'O_H003_2', type: '钻石客户', triggerRule: '高价值', priority: '高', status: '待处理', createTime: '2025-01-14 09:20:00' }
+      ]
+    },
+  ],
+  selectedHandlerId: 'H001',
+  age: { value: 'N/A', isConflict: false },
+  gender: { value: 'N/A', isConflict: false },
+  city: { value: '上海', isConflict: false },
+  preferredCarModel: { value: 'Taycan', isConflict: false, tags: ['高价值', '餐饮行业'] },
+  maintenanceRecords: { value: '25次保养', isConflict: false },
+  tags: ['大客户', '高价值', '餐饮行业', 'VIP车主'],
+  totalConsumption: { value: 5680000, isConflict: false },
+  mobile: {
+    items: [{ id: 'c_m1', mobile: '021-66668888', isPrimary: true, relationTagName: '公司电话' }],
+    isConflict: false
+  } as any,
+  vehicles: [
+    { id: 'CV001', vehicleModel: 'Taycan Turbo S', licensePlate: '沪A88888', vin: 'WP0ZZZ99ZDS123456', status: '自用', source: 'DMS' },
+    { id: 'CV002', vehicleModel: 'Panamera', licensePlate: '沪B99999', vin: 'WP0ZZZ99ZDS654321', status: '自用', source: 'CRM' },
+  ],
+  assets: [
+    { id: 'CA001', type: 'voucher', name: '大客户礼包', amount: 50000, status: '未使用', validFrom: '2025-01-01', validTo: '2026-01-01', source: '集团总部' },
+  ],
+  transactions: [
+    { id: 'CT001', orderNo: 'ORD_COMP_001', productName: 'Taycan 批量采购', amount: 5000000, status: '已完成', transactionTime: '2025-01-05', source: 'DMS' },
+  ]
+}
+
 // Mock 标签池数据（业务标签）
 export const mockTagPool: TagPool[] = [
   // 意向级别 - 灰蓝色系
   { id: 'intent_cold', name: '冷', category: '意向级别', color: '#A8B5C0' },
   { id: 'intent_warm', name: '暖', category: '意向级别', color: '#D8C8A8' },
   { id: 'intent_hot', name: '热', category: '意向级别', color: '#D4B8B8' },
-  
+
   // SC【必选】- 灰绿色系
   { id: 'sc_pmp', name: 'PMP邀约', category: 'SC【必选】', required: true, color: '#B8C8B8' },
   { id: 'sc_full_payment', name: '全款', category: 'SC【必选】', required: true, color: '#B8C8B8' },
@@ -427,12 +509,12 @@ export const mockTagPool: TagPool[] = [
   { id: 'sc_sales_invitation', name: '销售邀约', category: 'SC【必选】', required: true, color: '#B8C8B8' },
   { id: 'sc_public_plate', name: '公牌', category: 'SC【必选】', required: true, color: '#B8C8B8' },
   { id: 'sc_other', name: '其他', category: 'SC【必选】', required: true, color: '#B8C8B8' },
-  
+
   // SA【必选】- 灰紫色系
   { id: 'sa_local', name: '本市', category: 'SA【必选】', required: true, color: '#D8C8E8' },
   { id: 'sa_outside', name: '省内外市', category: 'SA【必选】', required: true, color: '#D8C8E8' },
   { id: 'sa_private_plate', name: '私牌', category: 'SA【必选】', required: true, color: '#D8C8E8' },
-  
+
   // 续保【必选】- 灰粉色系
   { id: 'insurance_picc', name: '人保', category: '续保【必选】', required: true, color: '#E4C8C8' },
   { id: 'insurance_life', name: '人寿', category: '续保【必选】', required: true, color: '#E4C8C8' },
@@ -456,20 +538,20 @@ export const mockTagPool: TagPool[] = [
   { id: 'insurance_renewal', name: '续保', category: '续保【必选】', required: true, color: '#E4C8C8' },
   { id: 'insurance_taiping', name: '太平', category: '续保【必选】', required: true, color: '#E4C8C8' },
   { id: 'insurance_dadi', name: '大地', category: '续保【必选】', required: true, color: '#E4C8C8' },
-  
+
   // POC【必选】- 灰黄色系
   { id: 'poc_other', name: '其他评估', category: 'POC【必选】', required: true, color: '#E8D8B8' },
   { id: 'poc_range', name: '区间报价', category: 'POC【必选】', required: true, color: '#E8D8B8' },
   { id: 'poc_aftersales', name: '售后评估', category: 'POC【必选】', required: true, color: '#E8D8B8' },
   { id: 'poc_precise', name: '精确报价', category: 'POC【必选】', required: true, color: '#E8D8B8' },
   { id: 'poc_sales', name: '销售评估', category: 'POC【必选】', required: true, color: '#E8D8B8' },
-  
+
   // 免打扰车主 - 灰褐色系
   { id: 'dnd_owner', name: '车主免打扰', category: '免打扰车主', color: '#D8C8B8' },
-  
+
   // 线上活动 - 灰蓝色系
   { id: 'online_activity_aug', name: '8月再购活动抽奖', category: '线上活动', color: '#C8D5E0' },
-  
+
   // 爱好(≥1项) - 灰绿色系
   { id: 'hobby_parent_child', name: '亲子', category: '爱好(≥1项)', minSelect: 1, color: '#C8D8C8' },
   { id: 'hobby_wine', name: '品酒', category: '爱好(≥1项)', minSelect: 1, color: '#C8D8C8' },

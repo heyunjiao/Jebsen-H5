@@ -1,33 +1,12 @@
 <template>
   <div class="home-container">
-    <!-- 顶部状态栏系统 -->
-    <div class="alert-system">
-      <!-- 冲突提示（最顶部优先显示）- 弹幕滚动 -->
-      <van-notice-bar
-        v-if="customerStore.profile?.nameMobileConflict && customerStore.profile.nameMobileConflict.length > 0"
-        left-icon="warning-o"
-        color="#B45309"
-        background="#FFFBEB"
-        scrollable
-        class="alert-bar conflict-alert-bar"
-        @click="showConflictResolver = true"
-      >
-        ⚠️ 该顾客疑似存在多条记录冲突，请核实身份信息
-      </van-notice-bar>
 
-      <!-- 最新操作这个客户的信息提示，点击弹窗显示操作日志 - 弹幕滚动 -->
-      <van-notice-bar
-        v-if="latestOperationText || customerStore.profile?.latestOperation"
-        left-icon="info-o"
-        color="#94724A"
-        background="#FEF9F3"
-        scrollable
-        class="alert-bar operation-alert-bar"
-        @click="showOperationLogDialog = true"
-      >
-        {{ latestOperationText || '该顾客已被 Rebecca Z. 人工更新' }}<span v-if="customerStore.profile?.latestOperation?.operationTime" class="operation-time"> {{ formatOperationTime(customerStore.profile.latestOperation.operationTime) }} ›</span>
-      </van-notice-bar>
+    <!-- 强力便捷切换工具 -->
+    <div class="fixed-account-toggle" @click="toggleAccountType">
+      <van-icon name="exchange" class="toggle-icon" />
+      <span>{{ isCompany ? '回个人' : '看公司' }}</span>
     </div>
+
 
 
 
@@ -39,34 +18,83 @@
         </span> -->
     <!-- 首屏内容 -->
     <div v-if="!customerStore.loading && customerStore.profile" class="first-screen">
-      <!-- 沉浸式头部：参考图片排版，带多个Jebsen水印 -->
-      <div class="premium-header">
-        <!-- 多个Jebsen水印背景 - 铺满背景 -->
-        <div class="watermark-bg"></div>
-        <div class="header-main">
-          <!-- 左侧头像 -->
-          <div class="avatar-wrapper">
-            <div class="avatar-circle">
-              <span class="avatar-text">{{ String(customerStore.profile.name?.value || 'XX').charAt(0) }}</span>
+      
+      <!-- [新增层级] 公司主体信息层：仅在公司账户下显示 -->
+      <div v-if="isCompany" class="company-identity-layer">
+        <div class="company-basic-info">
+          <div class="comp-icon"><van-icon name="shop-o" /></div>
+          <div class="comp-main">
+            <h2 class="comp-name">{{ customerStore.profile.name.value }}</h2>
+            <div class="comp-meta">企业统一社会信用代码：91310115MA1K...</div>
+          </div>
+        </div>
+        
+        <!-- 经办人快速切换（像切账号一样） -->
+        <div class="handler-selector-bar">
+          <div class="bar-label">选择经办人：</div>
+          <div class="handler-chips-wrapper">
+            <div 
+              v-for="handler in customerStore.profile.handlers" 
+              :key="handler.id"
+              class="handler-pill"
+              :class="{ active: customerStore.profile.selectedHandlerId === handler.id }"
+              @click="customerStore.setHandler(handler.id)"
+            >
+              {{ handler.name }}
             </div>
           </div>
-          <!-- 右侧信息 -->
+        </div>
+      </div>
+
+      <!-- 顶部状态栏系统 (移至此处：紧贴个人画像卡片) -->
+      <div class="alert-system context-alert">
+        <!-- 冲突提示 -->
+        <van-notice-bar
+          v-if="currentConflicts && currentConflicts.length > 0"
+          left-icon="warning"
+          color="#D46B08"
+          background="#FFFBE6"
+          class="alert-bar conflict-alert-bar"
+          @click="showConflictResolver = true"
+        >
+          该顾客疑似存在多条记录冲突，请核实身份信息
+        </van-notice-bar>
+
+        <!-- 最新操作提示 -->
+        <van-notice-bar
+          v-if="latestOperationDisplay"
+          left-icon="info-o"
+          color="#94724A"
+          background="#FEF9F3"
+          mode="link"
+          class="alert-bar operation-alert-bar"
+          @click="showOperationLogDialog = true"
+        >
+          {{ latestOperationText }} {{ formatOperationTime(latestOperationDisplay.operationTime) }}
+        </van-notice-bar>
+      </div>
+
+      <!-- 核心画像层：内容与个人视图完全一致 -->
+      <div class="premium-header">
+        <div class="watermark-bg"></div>
+        <div class="header-main">
+          <div class="avatar-wrapper">
+            <div class="avatar-circle">
+              <span class="avatar-text">{{ String(currentAgentName).charAt(0) }}</span>
+            </div>
+          </div>
           <div class="header-info-wrapper">
             <div class="user-name-row">
               <div class="name-left">
-                <h1>{{ customerStore.profile.name?.value || 'XX' }}</h1>
-                <!-- 溯源追踪 icon：点击查看原平台溯源信息 -->
-                <van-icon
-                  name="cluster-o"
-                  class="trace-icon"
-                  @click="showPlatformFlow = true"
-                />
+                <h1>{{ currentAgentName }}</h1>
+                <van-icon name="cluster-o" class="trace-icon" @click="showPlatformFlow = true" />
               </div>
+
               <div class="meta-right">
-                <span class="oneid-pill">ONEID：{{ customerStore.profile.id }}</span>
-                <span v-if="customerStore.profile?.customerType?.value" class="customer-type-badge">
-                  <van-icon :name="customerTypeIcon" />
-                  {{ customerStore.profile.customerType.value === '个人' ? '个人' : customerStore.profile.customerType.value === '公司' ? '公司' : String(customerStore.profile.customerType.value) }}
+                <span class="oneid-pill">ONEID：{{ currentAgentId }}</span>
+                <span class="customer-type-badge">
+                  <van-icon name="user-o" />
+                  个人
                 </span>
               </div>
             </div>
@@ -75,7 +103,6 @@
                 v-for="(tag, index) in displayedHeaderTags" 
                 :key="index"
                 :class="getHeaderTagClass(tag)"
-                :style="{ cursor: isOpportunityTag(tag) ? 'pointer' : 'default' }"
                 @click="isOpportunityTag(tag) ? (showOpportunityDialog = true) : undefined"
               >
                 <van-icon v-if="getTagIcon(tag)" :name="getTagIcon(tag)" class="tag-icon" />
@@ -85,6 +112,7 @@
           </div>
         </div>
       </div>
+      
 
       <!-- 手机号区域：极致负边距嵌入头部 -->
       <div class="phone-card">
@@ -175,7 +203,7 @@
         </div>
         <div class="tags-list-container">
           <span
-            v-for="(tag, index) in customerStore.profile.tags"
+            v-for="(tag, index) in (selectedHandler?.tags || customerStore.profile?.tags)"
             :key="index"
             class="tag-item-custom"
             :class="getTagCustomClass(tag)"
@@ -197,19 +225,19 @@
         <div class="info-grid">
           <div class="info-node">
             <div class="node-l">姓名</div>
-            <div class="node-v">{{ customerStore.profile.name.value || '未知' }}</div>
+            <div class="node-v">{{ currentAgentName }}</div>
           </div>
           <div class="info-node">
             <div class="node-l">年龄</div>
-            <div class="node-v">{{ customerStore.profile.age.value || '未知' }}</div>
+            <div class="node-v">{{ selectedHandler?.age || customerStore.profile?.age?.value || '未知' }}</div>
           </div>
           <div class="info-node">
             <div class="node-l">性别</div>
-            <div class="node-v">{{ customerStore.profile.gender.value || '未知' }}</div>
+            <div class="node-v">{{ selectedHandler?.gender || customerStore.profile?.gender?.value || '未知' }}</div>
           </div>
           <div class="info-node">
             <div class="node-l">城市</div>
-            <div class="node-v">{{ customerStore.profile.city.value || '未知' }}</div>
+            <div class="node-v">{{ selectedHandler?.city || customerStore.profile?.city?.value || '未知' }}</div>
           </div>
         </div>
       </div>
@@ -412,9 +440,9 @@
 
     <!-- 冲突处理弹窗 -->
     <ConflictResolver
-      v-if="customerStore.profile?.nameMobileConflict"
+      v-if="currentConflicts.length > 0"
       v-model:show="showConflictResolver"
-      :conflicts="customerStore.profile.nameMobileConflict"
+      :conflicts="currentConflicts"
       @submitted="handleConflictSubmitted"
     />
 
@@ -607,7 +635,7 @@
         </div>
         <div class="popup-content">
           <div
-            v-for="asset in customerStore.assets"
+            v-for="asset in displayedAssets"
             :key="asset.id"
             class="asset-item"
           >
@@ -820,6 +848,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useCustomerStore } from '@/stores/customer'
 import C360Field from '@/components/C360Field.vue'
 import Maintenance from '@/views/Maintenance.vue'
@@ -853,6 +882,60 @@ const operationLogsLoading = ref(false)
 const showOpportunityDialog = ref(false)
 const showVehicleDialog = ref(false)
 const showAssetDialog = ref(false)
+const router = useRouter()
+const route = useRoute()
+
+// 切换账户类型
+const toggleAccountType = () => {
+  if (customerStore.loading) return
+  
+  const currentIsCompany = route.query.type === 'company'
+  const newType = currentIsCompany ? 'personal' : 'company'
+  
+  showLoadingToast({
+    message: `切往${newType === 'company' ? '公司' : '个人'}...`,
+    forbidClick: true,
+    duration: 0 // 持续显示直到手动关闭
+  })
+  
+  router.push({ query: { type: newType } }).then(() => {
+    console.log('[Home] 路由跳转完成:', newType)
+  })
+}
+
+const loadAllData = async (customerId?: string) => {
+  console.log('[Home] loadAllData, customerId:', customerId)
+  
+  // 先清空一些关键数据，避免切换时看到旧数据
+  customerStore.profile = null
+  
+  try {
+    await customerStore.fetchProfile(customerId)
+    await customerStore.fetchTagPool()
+    
+    // 并行拉取其他所有关联数据
+    await Promise.all([
+      customerStore.fetchTransactions(customerId),
+      customerStore.fetchVehicles(customerId),
+      customerStore.fetchAssets(customerId), // 强制重新获取
+      customerStore.fetchAppointments(customerId),
+      customerStore.fetchPlatformSources(customerId),
+      customerStore.fetchOpportunities(customerId),
+      customerStore.fetchOperationLogs(customerId),
+    ])
+  } catch (error) {
+    console.error('[Home] 数据加载失败:', error)
+  }
+}
+
+// 监听路由参数变化，实现无刷新切换
+watch(() => route.query.type, (newType) => {
+  console.log('[Home] Watch监听到类型变化:', newType)
+  const customerId = newType === 'company' ? 'COMP001' : undefined
+  loadAllData(customerId).then(() => {
+    closeToast()
+  })
+}, { immediate: true }) // 核心修复：增加 immediate 确保初始加载也走这里
 const basicInfoFormRef = ref()
 const basicInfoForm = ref({
   name: '',
@@ -869,17 +952,43 @@ const mobileRules = [
   { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确' },
 ]
 
-// 客户类型相关
+// 客户类型相关 - 改为直接由路由决定，这样更稳点
+const isCompanyByRoute = computed(() => route.query.type === 'company')
+
 const isCompany = computed(() => {
-  return customerStore.profile?.customerType?.value === '公司'
+  // 优先看路由，其次看数据，确保 UI 反应灵敏
+  return isCompanyByRoute.value || customerStore.profile?.customerType?.value === '公司'
 })
 
 const customerTypeText = computed(() => {
-  return customerStore.profile?.customerType?.value === '公司' ? '公司' : '个人'
+  return isCompany.value ? '公司' : '个人'
 })
 
 const customerTypeIcon = computed(() => {
   return isCompany.value ? 'shop-o' : 'user-o'
+})
+
+// 当前选中的经办人对象
+const selectedHandler = computed(() => {
+  const profile = customerStore.profile
+  if (isCompany.value && profile?.selectedHandlerId && profile.handlers) {
+    return profile.handlers.find(h => h.id === profile.selectedHandlerId) || null
+  }
+  return null
+})
+
+// 当前画像主体姓名（个人时是原名，公司时是选中的经办人名）
+const currentAgentName = computed(() => {
+  if (selectedHandler.value) return selectedHandler.value.name
+  return String(customerStore.profile?.name.value || 'XX')
+})
+
+// 当前显示的 ONEID
+const currentAgentId = computed(() => {
+  if (isCompany.value && customerStore.profile?.selectedHandlerId) {
+    return customerStore.profile.selectedHandlerId
+  }
+  return customerStore.profile?.id || 'C001'
 })
 
 // 格式化手机号：13800138000 -> 138 0013 8000
@@ -897,10 +1006,28 @@ const formatMobile = (mobile: string): string => {
 
 // 电话相关
 const displayedPhones = computed(() => {
-  if (!customerStore.profile?.mobile || !('items' in customerStore.profile.mobile)) {
+  const profile = customerStore.profile
+  if (!profile) return []
+  
+  // 如果是公司账户且选中了经办人，显示经办人的手机号
+  if (isCompany.value && profile.selectedHandlerId && profile.handlers) {
+    const handler = profile.handlers.find(h => h.id === profile.selectedHandlerId)
+    if (handler?.mobile) {
+      return [{
+        id: 'handler_mobile_' + handler.id,
+        mobile: handler.mobile,
+        isPrimary: true,
+        relationTagName: '经办人电话',
+        businessTags: [handler.role || '经办人'],
+        formattedMobile: formatMobile(handler.mobile)
+      }]
+    }
+  }
+
+  if (!profile.mobile || !('items' in profile.mobile)) {
     return []
   }
-  const items = (customerStore.profile.mobile as MobileData).items
+  const items = (profile.mobile as MobileData).items
   return items.slice(0, 2).map(item => ({
     ...item,
     formattedMobile: formatMobile(item.mobile)
@@ -941,13 +1068,19 @@ const opportunityList = computed(() => {
   return opportunityType.value ? [String(opportunityType.value)] : []
 })
 
+// 所有显示的资产（响应经办人切换）
+const displayedAssets = computed(() => {
+  return selectedHandler.value?.assets || customerStore.assets || []
+})
+
 // 最近到期的优惠券
 const nearestExpiringAsset = computed(() => {
-  if (!customerStore.assets || customerStore.assets.length === 0) {
+  const assets = displayedAssets.value
+  if (!assets || assets.length === 0) {
     return null
   }
   // 按到期日期排序，取最近的一个
-  const sorted = [...customerStore.assets].sort((a, b) => {
+  const sorted = [...assets].sort((a, b) => {
     const dateA = new Date(a.validTo).getTime()
     const dateB = new Date(b.validTo).getTime()
     return dateA - dateB
@@ -957,24 +1090,27 @@ const nearestExpiringAsset = computed(() => {
 
 // 显示的车辆（最多2辆）
 const displayedVehicles = computed(() => {
-  if (!customerStore.vehicles || customerStore.vehicles.length === 0) {
+  const vehicles = selectedHandler.value?.vehicles || customerStore.vehicles
+  if (!vehicles || vehicles.length === 0) {
     return []
   }
-  return customerStore.vehicles.slice(0, 2)
+  return vehicles.slice(0, 2)
 })
 
 // 头部标签：显示客户类型 + 钻石客户 + VIP 车主 + 所有商机类型
 const displayedHeaderTags = computed(() => {
   const tags: string[] = []
   
-  // 1. 添加 VIP 车主（如果 tags 中存在）
-  if (customerStore.profile?.tags?.some(tag => tag.includes('VIP') && tag.includes('车主'))) {
+  // 1. 添加 VIP 车主（优先从经办人标签中找，其次从 profile.tags 中找）
+  const profileTags = selectedHandler.value?.tags || customerStore.profile?.tags || []
+  if (profileTags.some(tag => tag.includes('VIP') && tag.includes('车主'))) {
     tags.push('VIP 车主')
   }
   
-  // 2. 添加所有商机类型（包括钻石客户）
-  if (customerStore.opportunities && customerStore.opportunities.length > 0) {
-    const opportunityTypes = customerStore.opportunities.map(opp => opp.type)
+  // 2. 添加所有商机类型（优先从经办人商机中找，其次从 opportunities 中找）
+  const opps = selectedHandler.value?.opportunities || customerStore.opportunities || []
+  if (opps.length > 0) {
+    const opportunityTypes = opps.map(opp => opp.type)
     tags.push(...opportunityTypes)
   }
   
@@ -1147,19 +1283,37 @@ const formatOperationTime = (time: string): string => {
   }
 }
 
+// 具体的最新操作对象（响应经办人切换）
+const latestOperationDisplay = computed(() => {
+  const profile = customerStore.profile
+  if (!profile) return null
+  
+  if (isCompany.value && profile.selectedHandlerId && profile.handlers) {
+    const handler = profile.handlers.find(h => h.id === profile.selectedHandlerId)
+    if (handler?.latestOperation) return handler.latestOperation
+  }
+  
+  return profile.latestOperation || null
+})
+
+// 当前画像主体存在的冲突（响应经办人切换）
+const currentConflicts = computed(() => {
+  const profile = customerStore.profile
+  if (!profile) return []
+  
+  if (isCompany.value && profile.selectedHandlerId && profile.handlers) {
+    const handler = profile.handlers.find(h => h.id === profile.selectedHandlerId)
+    return handler?.nameMobileConflict || []
+  }
+  
+  return profile.nameMobileConflict || []
+})
+
 // 最新操作信息文本
 const latestOperationText = computed(() => {
-  const profile = customerStore.profile
-  if (!profile) {
-    return ''
-  }
-  
-  const latestOperation = profile.latestOperation
-  if (!latestOperation) {
-    return ''
-  }
-  
-  return `该顾客已被 ${latestOperation.operator} ${latestOperation.operationType}`
+  const op = latestOperationDisplay.value
+  if (!op) return ''
+  return `该顾客已被 ${op.operator} ${op.operationType}`
 })
 
 // 可用标签（排除已选标签）
@@ -1712,14 +1866,16 @@ const handleMobileUpdate = async (data: MobileData) => {
 
 // 打开基础信息编辑弹窗
 const openBasicInfoEditor = () => {
-  if (customerStore.profile) {
+  const profile = customerStore.profile
+  if (profile) {
+    const handler = selectedHandler.value
     basicInfoForm.value = {
-      name: String(customerStore.profile.name.value || ''),
-      age: String(customerStore.profile.age.value || ''),
+      name: String(handler ? handler.name : (profile.name.value || '')),
+      age: String(handler ? (handler.age || '') : (profile.age.value || '')),
       mobile: '', // 手机号已在MobileEditor中管理，这里不再使用
-      gender: String(customerStore.profile.gender.value || ''),
-      city: String(customerStore.profile.city.value || ''),
-      customerType: customerStore.profile.customerType ? String(customerStore.profile.customerType.value || '') : '',
+      gender: String(handler ? (handler.gender || '') : (profile.gender.value || '')),
+      city: String(handler ? (handler.city || '') : (profile.city.value || '')),
+      customerType: profile.customerType ? String(profile.customerType.value || '') : '',
       reason: '',
     }
   }
@@ -1750,21 +1906,30 @@ const handleSaveBasicInfo = async () => {
   // 先检查是否有字段变更（在显示 loading 之前）
   const updateData: Record<string, any> = {}
   
+  // 基础对比数据源集（公司模式下对比经办人，个人模式对比画像主数据）
+  const profile = customerStore.profile
+  const handler = selectedHandler.value
+  
+  const baseName = String(handler ? handler.name : (profile.name.value || ''))
+  const baseAge = String(handler ? (handler.age || '') : (profile.age.value || ''))
+  const baseGender = String(handler ? (handler.gender || '') : (profile.gender.value || ''))
+  const baseCity = String(handler ? (handler.city || '') : (profile.city.value || ''))
+  const baseType = profile.customerType ? String(profile.customerType.value || '') : ''
+
   // 收集所有变更的字段
-  if (basicInfoForm.value.name !== String(customerStore.profile.name.value || '')) {
+  if (basicInfoForm.value.name !== baseName) {
     updateData.name = basicInfoForm.value.name
   }
-  if (basicInfoForm.value.age !== String(customerStore.profile.age.value || '')) {
+  if (basicInfoForm.value.age !== baseAge) {
     updateData.age = basicInfoForm.value.age ? Number(basicInfoForm.value.age) : null
   }
-  // 手机号已在MobileEditor中管理，这里不再处理
-  if (basicInfoForm.value.gender !== String(customerStore.profile.gender.value || '')) {
+  if (basicInfoForm.value.gender !== baseGender) {
     updateData.gender = basicInfoForm.value.gender
   }
-  if (basicInfoForm.value.city !== String(customerStore.profile.city.value || '')) {
+  if (basicInfoForm.value.city !== baseCity) {
     updateData.city = basicInfoForm.value.city
   }
-  if (customerStore.profile.customerType && basicInfoForm.value.customerType !== String(customerStore.profile.customerType.value || '')) {
+  if (basicInfoForm.value.customerType !== baseType) {
     updateData.customerType = basicInfoForm.value.customerType
   }
 
@@ -1833,7 +1998,7 @@ const loadOperationLogs = async () => {
 
 // 处理优惠券卡片点击
 const handleCouponCardClick = () => {
-  if (customerStore.assets && customerStore.assets.length > 1) {
+  if (displayedAssets.value.length > 0) {
     showAssetDialog.value = true
   }
 }
@@ -1871,47 +2036,72 @@ const handleVehicleStatusChange = async (vehicleId: string, status: string) => {
 
 // 初始化
 onMounted(async () => {
-  console.log('Home 组件 mounted，开始加载数据')
-  await customerStore.fetchProfile()
-  await customerStore.fetchTagPool()
-  // 并行加载交易记录、车辆关联、资产中心、预约信息、平台溯源、商机信息、操作日志
-  // 注意：保险记录使用滚动加载，不在初始化时加载
-  await Promise.all([
-    customerStore.fetchTransactions(),
-    customerStore.fetchVehicles(),
-    customerStore.fetchAssets(),
-    customerStore.fetchAppointments(),
-    customerStore.fetchPlatformSources(),
-    customerStore.fetchOpportunities(),
-    loadOperationLogs(),
-  ])
-  console.log('数据加载完成，profile:', customerStore.profile)
-  console.log('数据加载完成，customerType:', customerStore.profile?.customerType)
-  console.log('数据加载完成，opportunityType:', customerStore.profile?.opportunityType)
-  console.log('数据加载完成，segmentType:', customerStore.profile?.segmentType)
-  console.log('数据加载完成，totalConsumption:', customerStore.profile?.totalConsumption)
-  console.log('数据加载完成，tagPool:', customerStore.tagPool)
-  console.log('数据加载完成，transactions:', customerStore.transactions)
-  console.log('数据加载完成，vehicles:', customerStore.vehicles)
-  console.log('数据加载完成，assets:', customerStore.assets)
-  console.log('数据加载完成，appointments:', customerStore.appointments)
-  console.log('数据加载完成，platformSources:', customerStore.platformSources)
+  // 初始化现在通过 watch(..., { immediate: true }) 处理，这里只打日志
+  console.log('Home 组件 mounted')
 })
 </script>
 
 <style scoped lang="scss">
+// 悬浮账号切换球
+.fixed-account-toggle {
+  position: fixed;
+  right: 0;
+  top: 25%;
+  z-index: 9999;
+  background: var(--accent-gold);
+  color: black;
+  padding: 10px 14px;
+  border-radius: 30px 0 0 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  box-shadow: -2px 4px 12px rgba(0, 0, 0, 0.3);
+  font-weight: 700;
+  font-size: 11px;
+  cursor: pointer;
+  
+  .toggle-icon {
+    font-size: 18px;
+  }
+}
+
 .home-container {
   min-height: 100vh;
-  background: var(--bg-slate);
+  background: #F1F5F9; // 明确的浅灰蓝背景，拉开层次
   padding: 12px;
   max-width: 100%;
   box-sizing: border-box;
-  padding-bottom: 50px; // 为底部 Tab 留出空间
+  padding-bottom: 50px;
   overflow-y: auto;
   font-family: "Porsche Next", -apple-system, "PingFang SC", sans-serif;
-  color: var(--text-main);
+  color: #1E293B;
   line-height: 1.5;
-  letter-spacing: -0.01em;
+}
+
+// 状态栏系统
+.alert-system {
+  margin-bottom: 8px;
+  
+  &.context-alert {
+    margin: 4px 0 8px;
+  }
+}
+
+.alert-bar {
+  border-radius: 6px;
+  height: 36px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.02);
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  :deep(.van-notice-bar__content) {
+    font-weight: 500;
+  }
 }
 
 // 首屏内容：紧凑布局，确保tab可见
@@ -1922,6 +2112,112 @@ onMounted(async () => {
   margin-bottom: 0;
   padding: 0;
   background: transparent;
+}
+
+// 公司主体信息层 - 2.0 高级感重构
+.company-identity-layer {
+  background: #FFFFFF;
+  margin: -12px -12px 0px; 
+  padding: 24px 20px 20px;
+  position: relative;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+
+  // 增加一个极细的顶部装饰线条（保时捷金）
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #94724A 0%, #D1B894 100%);
+  }
+
+  .company-basic-info {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+
+    .comp-icon {
+      width: 48px;
+      height: 48px;
+      background: #FDFBFA;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: var(--accent-gold);
+      border: 1.5px solid #F1E9DE;
+      box-shadow: inset 0 2px 4px rgba(148, 114, 74, 0.05);
+    }
+
+    .comp-main {
+      .comp-name {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 700;
+        color: #111827;
+        letter-spacing: -0.01em;
+      }
+
+      .comp-meta {
+        font-size: 11px;
+        color: #9CA3AF;
+        margin-top: 3px;
+        font-weight: 400;
+      }
+    }
+  }
+
+  .handler-selector-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    .bar-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #94724A;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      opacity: 0.8;
+    }
+
+    .handler-chips-wrapper {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      &::-webkit-scrollbar { display: none; }
+    }
+
+    .handler-pill {
+      padding: 6px 18px;
+      background: #F8FAFC;
+      border-radius: 20px;
+      font-size: 12px;
+      color: #64748B;
+      white-space: nowrap;
+      border: 1px solid #E2E8F0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+
+      &:active {
+        transform: scale(0.96);
+      }
+
+      &.active {
+        background: #0F172A; // 更深邃的 Slate-900 作为选中态
+        color: #FFFFFF;
+        border-color: #0F172A;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+      }
+    }
+  }
 }
 
 // 简洁头部：参考图片排版，带多个Jebsen水印
@@ -2002,6 +2298,7 @@ onMounted(async () => {
   .name-left {
     display: flex;
     align-items: center;
+    gap: 8px;
 
     h1 {
       margin: 0;
@@ -2009,6 +2306,20 @@ onMounted(async () => {
       font-weight: 600;
       color: white;
       line-height: 1.2;
+    }
+
+    .account-switch-tag {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      font-size: 10px;
+      padding: 0 4px;
+      height: 18px;
+      line-height: 16px;
+      cursor: pointer;
+      &:active {
+        background: rgba(255, 255, 255, 0.2);
+      }
     }
 
     .trace-icon {

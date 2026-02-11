@@ -19,6 +19,16 @@ export const useCustomerStore = defineStore('customer', () => {
   const marketingCampaigns = ref<MarketingCampaign[]>([])
   const loading = ref(false)
 
+  // 设置经办人
+  const setHandler = (handlerId: string) => {
+    if (profile.value && profile.value.handlers) {
+      profile.value.selectedHandlerId = handlerId
+      // 这里可以添加逻辑：切换经办人后重新加载该经办人相关的车辆、维保等信息
+      // 目前演示模式下，我们可以保持数据不变，或者模拟一些数据变化
+      showToast(`已切换至经办人: ${profile.value.handlers.find(h => h.id === handlerId)?.name}`)
+    }
+  }
+
   // 获取客户画像
   const fetchProfile = async (customerId?: string) => {
     loading.value = true
@@ -49,96 +59,50 @@ export const useCustomerStore = defineStore('customer', () => {
       }
     } catch (error: any) {
       // Fallback: 使用本地数据
-      console.log('使用 fallback 数据设置 profile')
-      profile.value = {
-        id: 'C001',
-        name: { value: '陈明', isConflict: false },
-        age: {
-          value: 35,
-          isConflict: true,
-          sources: [
-            { origin: '官网', value: 35, time: '2023-10-01 10:30:00' },
-            { origin: '线下门店', value: 38, time: '2023-09-15 14:20:00' },
-            { origin: '电话咨询', value: 36, time: '2023-09-20 09:15:00' },
+      console.log('使用 fallback 数据设置 profile, ID:', customerId)
+      if (customerId === 'COMP001') {
+        profile.value = {
+          id: 'COMP001',
+          name: { value: '上海喜茶公司', isConflict: false },
+          customerType: { value: '公司', isConflict: false },
+          handlers: [
+            { id: 'H001', name: '张三', role: '采购主管', mobile: '13811112222' },
+            { id: 'H002', name: '李四', role: '财务经理', mobile: '13833334444' },
+            { id: 'H003', name: '王五', role: '行政总监', mobile: '13855556666' },
           ],
-        },
-        mobile: {
-          items: [
-            {
-              id: 'mobile1',
-              mobile: '13800138000',
-              isPrimary: true,
-              relationTagId: 'tag2',
-              relationTagName: '高意向',
-              source: '官网',
-              updateTime: '2023-10-01 10:30:00',
-            },
-            {
-              id: 'mobile2',
-              mobile: '13900139000',
-              isPrimary: false,
-              relationTagId: 'tag3',
-              relationTagName: '置换需求',
-              source: '线下门店',
-              updateTime: '2023-09-15 14:20:00',
-            },
-          ],
-          isConflict: true,
-          editable: true,
-        },
-        gender: { value: '男', isConflict: false },
-        city: {
-          value: '北京',
-          isConflict: true,
-          sources: [
-            { origin: '官网注册', value: '北京', time: '2023-10-01 10:30:00' },
-            { origin: '线下门店', value: '上海', time: '2023-09-15 14:20:00' },
-          ],
-        },
-        preferredCarModel: { value: '3系', isConflict: false },
-        maintenanceRecords: { value: '3次保养，1次维修', isConflict: false },
-        tags: ['高意向', '置换需求'],
-        // 新增字段
-        customerType: {
-          value: '个人',
-          isConflict: false,
-          sources: [
-            { origin: 'CRM系统', value: '个人', time: '2023-10-01 10:30:00' },
-          ],
-        },
-        opportunityType: {
-          value: '高价值商机',
-          isConflict: false,
-          sources: [
-            { origin: 'CRM系统', value: '高价值商机', time: '2023-10-01 10:30:00' },
-          ],
-        },
-        segmentType: {
-          value: 'VIP客户群',
-          isConflict: false,
-          sources: [
-            { origin: '数据分析系统', value: 'VIP客户群', time: '2023-10-01 10:30:00' },
-          ],
-        },
-        totalConsumption: {
-          value: 1456200,
-          isConflict: false,
-          sources: [
-            { origin: '财务系统', value: 1456200, time: '2023-11-15 09:00:00' },
-          ],
-        },
-        // 最新操作信息（用于首页提示）
-        latestOperation: {
-          operator: 'Rebecca Z.',
-          operationType: '人工更新',
-          operationTime: '2024-01-15 14:30:00',
-        },
+          selectedHandlerId: 'H001',
+          tags: ['大客户', '高价值', '餐饮行业'],
+          city: { value: '上海', isConflict: false },
+          totalConsumption: { value: 5680000, isConflict: false },
+          age: { value: 'N/A', isConflict: false },
+          gender: { value: 'N/A', isConflict: false },
+          preferredCarModel: { value: 'Taycan', isConflict: false },
+          maintenanceRecords: { value: '25次保养', isConflict: false },
+          mobile: {
+            items: [{ id: 'm1', mobile: '021-66668888', isPrimary: true, relationTagName: '公司电话' }],
+            isConflict: false
+          } as any
+        }
+      } else {
+        profile.value = {
+          id: 'C001',
+          name: { value: '陈明', isConflict: false },
+          age: { value: 35, isConflict: false },
+          mobile: {
+            items: [
+              { id: 'm1', mobile: '13800138000', isPrimary: true, relationTagName: '本人' },
+            ],
+            isConflict: false,
+            editable: true,
+          } as any,
+          gender: { value: '男', isConflict: false },
+          city: { value: '北京', isConflict: false },
+          preferredCarModel: { value: '3系', isConflict: false },
+          maintenanceRecords: { value: '3次保养', isConflict: false },
+          tags: ['高意向', '置换需求'],
+          customerType: { value: '个人', isConflict: false },
+        }
       }
-      console.log('Profile 已设置:', profile.value)
-      console.log('Profile customerType:', profile.value?.customerType)
-      console.log('Profile opportunityType:', profile.value?.opportunityType)
-      console.log('Profile segmentType:', profile.value?.segmentType)
-      console.log('Profile totalConsumption:', profile.value?.totalConsumption)
     } finally {
       loading.value = false
       closeToast()
@@ -343,7 +307,7 @@ export const useCustomerStore = defineStore('customer', () => {
           ...profile.value.preferredCarModel,
           tags: [...res.data.tags],
         }
-        
+
         if (showSuccessToast) {
           showToast('保存成功')
         }
@@ -732,6 +696,7 @@ export const useCustomerStore = defineStore('customer', () => {
     updatePreferredCarModelTags,
     updateMaintenanceTags,
     submitNameMobileConflict,
+    setHandler,
   }
 })
 

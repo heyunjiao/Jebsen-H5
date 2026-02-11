@@ -214,6 +214,28 @@ export interface MarketingCampaign {
   source?: string // 来源系统
 }
 
+// 经办人信息类型
+export interface Handler {
+  id: string
+  name: string
+  role?: string
+  mobile?: string
+  avatar?: string
+  latestOperation?: {
+    operator: string
+    operationType: string
+    operationTime: string
+  }
+  age?: number
+  gender?: string
+  city?: string
+  tags?: string[]
+  vehicles?: VehicleRelation[]
+  assets?: Asset[]
+  opportunities?: Opportunity[]
+  nameMobileConflict?: NameMobileConflict[]
+}
+
 // 客户画像数据类型
 export interface CustomerProfile {
   id: string
@@ -231,6 +253,9 @@ export interface CustomerProfile {
   totalConsumption?: FieldData // 总消费
   customerType?: FieldData // 客户类型：个人/公司
   servicePreferences?: { tags: string[] } // 服务偏好（支持多标签）
+  // 经办人列表（仅公司账户）
+  handlers?: Handler[]
+  selectedHandlerId?: string // 当前选中的经办人ID
   // 冲突和合并相关
   nameMobileConflict?: NameMobileConflict[] // 姓名+手机号冲突数据
   isMultiSource?: boolean // 是否是多源平台合并
@@ -249,4 +274,5 @@ export interface CustomerProfile {
   vehicles?: VehicleRelation[] // 车辆关联（已废弃，使用独立接口）
   assets?: Asset[] // 资产中心（已废弃，使用独立接口）
 }
+
 

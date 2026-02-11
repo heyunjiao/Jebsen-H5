@@ -4,7 +4,7 @@
  */
 import type { AxiosRequestConfig, AxiosResponse } from 'axios'
 import type { CustomerProfile, TagPool, MobileData, MobileItem, MaintenanceRecord, Appointment, PlatformSource, Opportunity, OperationLog, InsuranceRecord, MarketingCampaign } from '@/types/customer'
-import { mockCustomerProfile, mockTagPool, mockRelationTagPool, mockMaintenanceRecords } from './data'
+import { mockCustomerProfile, mockCompanyProfile, mockTagPool, mockRelationTagPool, mockMaintenanceRecords } from './data'
 import { normalizeInsuranceRecords, validateInsuranceRecords } from './rules'
 
 // 模拟网络延迟
@@ -58,10 +58,19 @@ export async function mockRequestInterceptor(
     // GET /api/customer/profile
     if (method === 'get' && fullPath.includes('/customer/profile')) {
       await delay(800)
+
+      // 获取请求中的 customerId
+      const params = config.params || {}
+      const customerId = params.customerId
+      console.log('[Mock] profile 请求参数 customerId:', customerId)
+
+      // 根据 customerId 决定返回哪份数据
+      const baseProfile = customerId === 'COMP001' ? mockCompanyProfile : mockCustomerProfile
+
       // 确保 latestOperation 字段存在
       const profileWithLatestOperation = {
-        ...mockCustomerProfile,
-        latestOperation: mockCustomerProfile.latestOperation || {
+        ...baseProfile,
+        latestOperation: baseProfile.latestOperation || {
           operator: 'Rebecca Z.',
           operationType: '人工更新',
           operationTime: '2025-01-15 14:30:00',
@@ -104,12 +113,12 @@ export async function mockRequestInterceptor(
     // GET /api/customer/insurance/records
     else if (method === 'get' && fullPath.includes('/customer/insurance/records')) {
       await delay(800)
-      
+
       // 获取分页参数
       const params = config.params || {}
       const page = Number(params.page) || 1
       const pageSize = Number(params.pageSize) || 5
-      
+
       // 定义保险记录原始数据（生成更多数据用于分页测试）
       const allMockInsuranceRecordsRaw: Partial<InsuranceRecord>[] = [
         {
@@ -258,7 +267,7 @@ export async function mockRequestInterceptor(
           source: 'BDC',
         },
       ]
-      
+
       // 使用规则验证和规范化所有数据
       let allRecords: InsuranceRecord[]
       try {
@@ -271,14 +280,14 @@ export async function mockRequestInterceptor(
         console.error('[Mock] 保险记录数据规范化失败:', error)
         allRecords = []
       }
-      
+
       // 计算分页
       const total = allRecords.length
       const startIndex = (page - 1) * pageSize
       const endIndex = startIndex + pageSize
       const pageRecords = allRecords.slice(startIndex, endIndex)
       const hasMore = endIndex < total
-      
+
       mockResponse = {
         code: 200,
         message: 'success',
@@ -293,12 +302,12 @@ export async function mockRequestInterceptor(
     // GET /api/customer/marketing-campaigns
     else if (method === 'get' && fullPath.includes('/customer/marketing-campaigns')) {
       await delay(800)
-      
+
       // 获取分页参数
       const params = config.params || {}
       const page = Number(params.page) || 1
       const pageSize = Number(params.pageSize) || 5
-      
+
       // 定义线下活动记录原始数据
       const allMockMarketingCampaignsRaw: Partial<MarketingCampaign>[] = [
         {
@@ -452,7 +461,7 @@ export async function mockRequestInterceptor(
           source: 'DMS',
         },
       ]
-      
+
       // 规范化数据（确保必填字段存在）
       const allCampaigns: MarketingCampaign[] = allMockMarketingCampaignsRaw.map((item, index) => ({
         id: item.id || `MC${String(index + 1).padStart(3, '0')}`,
@@ -469,14 +478,14 @@ export async function mockRequestInterceptor(
         validExamples: item.validExamples,
         source: item.source,
       }))
-      
+
       // 计算分页
       const total = allCampaigns.length
       const startIndex = (page - 1) * pageSize
       const endIndex = startIndex + pageSize
       const pageCampaigns = allCampaigns.slice(startIndex, endIndex)
       const hasMore = endIndex < total
-      
+
       mockResponse = {
         code: 200,
         message: 'success',
@@ -494,7 +503,7 @@ export async function mockRequestInterceptor(
       const match = fullPath.match(/\/records\/([^/]+)\/tags/)
       const recordId = match ? match[1] : null
       const tags = (config.data as any)?.tags
-      
+
       if (!recordId) {
         mockResponse = {
           code: 400,
@@ -609,7 +618,7 @@ export async function mockRequestInterceptor(
       await delay(800)
       const body = config.data as any
       const { tags } = body
-      
+
       if (!Array.isArray(tags)) {
         mockResponse = {
           code: 400,
@@ -813,7 +822,7 @@ export async function mockRequestInterceptor(
       await delay(700)
       const body = config.data as any
       const { tags } = body
-      
+
       if (!Array.isArray(tags)) {
         mockResponse = {
           code: 400,
@@ -826,7 +835,7 @@ export async function mockRequestInterceptor(
           mockCustomerProfile.preferredCarModel.tags = []
         }
         mockCustomerProfile.preferredCarModel.tags = tags
-        
+
         mockResponse = {
           code: 200,
           message: '更新成功',
@@ -837,7 +846,9 @@ export async function mockRequestInterceptor(
     // GET /api/customer/transactions
     else if (method === 'get' && fullPath.includes('/customer/transactions')) {
       await delay(800)
-      const transactions = mockCustomerProfile.transactions || []
+      const customerId = config.params?.customerId
+      const targetProfile = customerId === 'COMP001' ? mockCompanyProfile : mockCustomerProfile
+      const transactions = targetProfile.transactions || []
       mockResponse = {
         code: 200,
         message: 'success',
@@ -847,7 +858,9 @@ export async function mockRequestInterceptor(
     // GET /api/customer/vehicles
     else if (method === 'get' && fullPath.includes('/customer/vehicles')) {
       await delay(800)
-      const vehicles = mockCustomerProfile.vehicles || []
+      const customerId = config.params?.customerId
+      const targetProfile = customerId === 'COMP001' ? mockCompanyProfile : mockCustomerProfile
+      const vehicles = targetProfile.vehicles || []
       mockResponse = {
         code: 200,
         message: 'success',
@@ -859,7 +872,7 @@ export async function mockRequestInterceptor(
       await delay(800)
       const vehicleId = fullPath.match(/\/customer\/vehicles\/([^/]+)\/status/)?.[1]
       const status = (config.data && typeof config.data === 'string' ? JSON.parse(config.data) : config.data)?.status
-      
+
       if (vehicleId && status) {
         // 查找并更新车辆状态
         const vehicles = mockCustomerProfile.vehicles || []
@@ -889,7 +902,9 @@ export async function mockRequestInterceptor(
     // GET /api/customer/assets
     else if (method === 'get' && fullPath.includes('/customer/assets')) {
       await delay(800)
-      const assets = mockCustomerProfile.assets || []
+      const customerId = config.params?.customerId
+      const targetProfile = customerId === 'COMP001' ? mockCompanyProfile : mockCustomerProfile
+      const assets = targetProfile.assets || []
       mockResponse = {
         code: 200,
         message: 'success',
@@ -1056,7 +1071,7 @@ export async function mockRequestInterceptor(
     else if (method === 'put' && fullPath.includes('/customer/basic-info')) {
       await delay(800)
       const body = config.data as any
-      
+
       // 验证更改理由
       if (!body.reason || !body.reason.trim()) {
         mockResponse = {
@@ -1093,7 +1108,7 @@ export async function mockRequestInterceptor(
     else if (method === 'post' && fullPath.includes('/customer/fields/correction')) {
       await delay(800)
       const body = config.data as any
-      
+
       // 验证必填字段
       if (!body.field || body.currentValue === undefined || body.correctValue === undefined) {
         mockResponse = {

@@ -318,13 +318,73 @@ const mockCustomerProfile: CustomerProfile = {
   ],
 }
 
+// Mock 公司账户数据
+const mockCompanyProfile: CustomerProfile = {
+  id: 'COMP001',
+  name: {
+    value: '上海喜茶公司',
+    isConflict: false,
+  },
+  age: {
+    value: 'N/A',
+    isConflict: false,
+  },
+  mobile: {
+    items: [
+      {
+        id: 'c_mobile1',
+        mobile: '021-66668888',
+        isPrimary: true,
+        relationTagName: '公司电话',
+        businessTags: ['公司'],
+        source: 'CRM',
+      },
+    ],
+    isConflict: false,
+    editable: false,
+  } as MobileData,
+  gender: {
+    value: 'N/A',
+    isConflict: false,
+  },
+  city: {
+    value: '上海',
+    isConflict: false,
+  },
+  preferredCarModel: {
+    value: 'Taycan',
+    isConflict: false,
+    tags: ['意向客户', '大客户'],
+  },
+  maintenanceRecords: {
+    value: '25次保养，5次维修',
+    isConflict: false,
+  },
+  tags: ['大客户', '高价值', '餐饮行业'],
+  customerType: {
+    value: '公司',
+    isConflict: false,
+  },
+  handlers: [
+    { id: 'H001', name: '张三', role: '采购主管', mobile: '13811112222' },
+    { id: 'H002', name: '李四', role: '财务经理', mobile: '13833334444' },
+    { id: 'H003', name: '王五', role: '行政总监', mobile: '13855556666' },
+  ],
+  selectedHandlerId: 'H001',
+  totalConsumption: {
+    value: 5680000,
+    isConflict: false,
+  },
+}
+
+
 // Mock 标签池数据（按分类组织，参考客户系统已知标签）
 const mockTagPool: TagPool[] = [
   // 意向级别 - 灰蓝色系
   { id: 'intent_cold', name: '冷', category: '意向级别', color: '#A8B5C0' },
   { id: 'intent_warm', name: '暖', category: '意向级别', color: '#D8C8A8' },
   { id: 'intent_hot', name: '热', category: '意向级别', color: '#D4B8B8' },
-  
+
   // SC【必选】- 灰绿色系
   { id: 'sc_pmp', name: 'PMP邀约', category: 'SC【必选】', required: true, color: '#B8C8B8' },
   { id: 'sc_full_payment', name: '全款', category: 'SC【必选】', required: true, color: '#B8C8B8' },
@@ -339,12 +399,12 @@ const mockTagPool: TagPool[] = [
   { id: 'sc_sales_invitation', name: '销售邀约', category: 'SC【必选】', required: true, color: '#B8C8B8' },
   { id: 'sc_public_plate', name: '公牌', category: 'SC【必选】', required: true, color: '#B8C8B8' },
   { id: 'sc_other', name: '其他', category: 'SC【必选】', required: true, color: '#B8C8B8' },
-  
+
   // SA【必选】- 灰紫色系
   { id: 'sa_local', name: '本市', category: 'SA【必选】', required: true, color: '#D8C8E8' },
   { id: 'sa_outside', name: '省内外市', category: 'SA【必选】', required: true, color: '#D8C8E8' },
   { id: 'sa_private_plate', name: '私牌', category: 'SA【必选】', required: true, color: '#D8C8E8' },
-  
+
   // 续保【必选】- 灰粉色系
   { id: 'insurance_picc', name: '人保', category: '续保【必选】', required: true, color: '#E4C8C8' },
   { id: 'insurance_life', name: '人寿', category: '续保【必选】', required: true, color: '#E4C8C8' },
@@ -368,20 +428,20 @@ const mockTagPool: TagPool[] = [
   { id: 'insurance_renewal', name: '续保', category: '续保【必选】', required: true, color: '#E4C8C8' },
   { id: 'insurance_taiping', name: '太平', category: '续保【必选】', required: true, color: '#E4C8C8' },
   { id: 'insurance_dadi', name: '大地', category: '续保【必选】', required: true, color: '#E4C8C8' },
-  
+
   // POC【必选】- 灰黄色系
   { id: 'poc_other', name: '其他评估', category: 'POC【必选】', required: true, color: '#E8D8B8' },
   { id: 'poc_range', name: '区间报价', category: 'POC【必选】', required: true, color: '#E8D8B8' },
   { id: 'poc_aftersales', name: '售后评估', category: 'POC【必选】', required: true, color: '#E8D8B8' },
   { id: 'poc_precise', name: '精确报价', category: 'POC【必选】', required: true, color: '#E8D8B8' },
   { id: 'poc_sales', name: '销售评估', category: 'POC【必选】', required: true, color: '#E8D8B8' },
-  
+
   // 免打扰车主 - 灰褐色系
   { id: 'dnd_owner', name: '车主免打扰', category: '免打扰车主', color: '#D8C8B8' },
-  
+
   // 线上活动 - 灰蓝色系
   { id: 'online_activity_aug', name: '8月再购活动抽奖', category: '线上活动', color: '#C8D5E0' },
-  
+
   // 爱好(≥1项) - 灰绿色系
   { id: 'hobby_parent_child', name: '亲子', category: '爱好(≥1项)', minSelect: 1, color: '#C8D8C8' },
   { id: 'hobby_wine', name: '品酒', category: '爱好(≥1项)', minSelect: 1, color: '#C8D8C8' },
@@ -567,12 +627,12 @@ let mockInsuranceRecords: InsuranceRecord[]
 try {
   // 规范化数据（确保金额取整、格式正确等）
   mockInsuranceRecords = normalizeInsuranceRecords(mockInsuranceRecordsRaw)
-  
+
   // 验证规范化后的数据
   if (!validateInsuranceRecords(mockInsuranceRecords)) {
     throw new Error('保险记录数据验证失败')
   }
-  
+
   console.log('[Mock] 保险记录数据已通过规则验证，共', mockInsuranceRecords.length, '条')
 } catch (error) {
   console.error('[Mock] 保险记录数据规范化或验证失败:', error)
@@ -640,7 +700,7 @@ const parseBody = (req: any): any => {
     rawBodyType: typeof req.rawBody,
     rawBodyValue: req.rawBody,
   })
-  
+
   // 优先使用 req.body（vite-plugin-mock 3.0 标准格式）
   if (req.body !== undefined && req.body !== null) {
     if (typeof req.body === 'object' && !Array.isArray(req.body) && Object.keys(req.body).length > 0) {
@@ -661,7 +721,7 @@ const parseBody = (req: any): any => {
       return req.body
     }
   }
-  
+
   // 其次使用 req.rawBody
   if (req.rawBody !== undefined && req.rawBody !== null) {
     if (typeof req.rawBody === 'string') {
@@ -678,19 +738,19 @@ const parseBody = (req: any): any => {
       return req.rawBody
     }
   }
-  
+
   // 最后使用 req.data
   if (req.data !== undefined && req.data !== null) {
     console.log('[Mock parseBody] 从 req.data 获取:', req.data)
     return req.data
   }
-  
+
   // 如果都没有，尝试从 query 中获取（某些情况下可能在这里）
   if (req.query && typeof req.query === 'object' && Object.keys(req.query).length > 0) {
     console.log('[Mock parseBody] 从 req.query 获取:', req.query)
     return req.query
   }
-  
+
   console.warn('[Mock parseBody] ⚠️ 无法解析请求体，返回空对象。请求信息:', {
     url: req.url,
     method: req.method,
@@ -701,7 +761,7 @@ const parseBody = (req: any): any => {
     bodyType: typeof req.body,
     bodyValue: req.body,
   })
-  
+
   return {}
 }
 
@@ -711,21 +771,18 @@ export default [
     url: '/api/customer/profile',
     method: 'get',
     response: async (req: any) => {
-      console.log('[Mock GET] /api/customer/profile - 请求:', req)
+      const { customerId } = req.query || {}
+      console.log('[Mock GET] /api/customer/profile - 请求:', req, 'customerId:', customerId)
       await delay(800)
+
+      const profile = customerId === 'COMP001' ? mockCompanyProfile : mockCustomerProfile
+
       const result = {
         code: 200,
         message: 'success',
-        data: mockCustomerProfile,
+        data: profile,
       }
       console.log('[Mock GET] /api/customer/profile - 返回:', result)
-      console.log('[Mock GET] /api/customer/profile - vehicles:', mockCustomerProfile.vehicles)
-      console.log('[Mock GET] /api/customer/profile - assets:', mockCustomerProfile.assets)
-      console.log('[Mock GET] /api/customer/profile - customerType:', mockCustomerProfile.customerType)
-      console.log('[Mock GET] /api/customer/profile - opportunityType:', mockCustomerProfile.opportunityType)
-      console.log('[Mock GET] /api/customer/profile - segmentType:', mockCustomerProfile.segmentType)
-      console.log('[Mock GET] /api/customer/profile - totalConsumption:', mockCustomerProfile.totalConsumption)
-      console.log('[Mock GET] /api/customer/profile - latestOperation:', mockCustomerProfile.latestOperation)
       return result
     },
   },
@@ -811,7 +868,7 @@ export default [
       const body = parseBody(req)
       console.log('[Mock POST] /api/customer/tags - 解析后的 body:', body)
       const { tagId } = body
-      
+
       if (!tagId) {
         return {
           code: 400,
@@ -819,7 +876,7 @@ export default [
           data: null,
         }
       }
-      
+
       const tag = mockTagPool.find((t) => t.id === tagId)
       if (!tag) {
         return {
@@ -828,11 +885,11 @@ export default [
           data: null,
         }
       }
-      
+
       if (!mockCustomerProfile.tags.includes(tag.name)) {
         mockCustomerProfile.tags.push(tag.name)
       }
-      
+
       const result = {
         code: 200,
         message: '添加成功',
@@ -852,7 +909,7 @@ export default [
       console.log('[Mock DELETE] /api/customer/tags - req.query:', req.query)
       await delay(700)
       const tagName = req.query?.tagName
-      
+
       if (!tagName) {
         return {
           code: 400,
@@ -860,12 +917,12 @@ export default [
           data: null,
         }
       }
-      
+
       const index = mockCustomerProfile.tags.indexOf(tagName)
       if (index > -1) {
         mockCustomerProfile.tags.splice(index, 1)
       }
-      
+
       const result = {
         code: 200,
         message: '删除成功',
@@ -886,7 +943,7 @@ export default [
       const body = parseBody(req)
       console.log('[Mock PUT] /api/customer/tags - 解析后的 body:', body)
       const { tags } = body
-      
+
       if (!Array.isArray(tags)) {
         return {
           code: 400,
@@ -894,7 +951,7 @@ export default [
           data: null,
         }
       }
-      
+
       // 验证标签是否都在标签池中
       const invalidTags = tags.filter(tagName => !mockTagPool.find(t => t.name === tagName))
       if (invalidTags.length > 0) {
@@ -904,10 +961,10 @@ export default [
           data: null,
         }
       }
-      
+
       // 更新标签列表
       mockCustomerProfile.tags = [...tags]
-      
+
       const result = {
         code: 200,
         message: '更新成功',
@@ -928,7 +985,7 @@ export default [
       const body = parseBody(req)
       console.log('[Mock POST] /api/customer/mobile/items - 解析后的 body:', body)
       const { mobile, relationTagId, relationTagName, relationTagIds, relationTagNames, businessTags, isPrimary } = body
-      
+
       if (!mobile || !/^1[3-9]\d{9}$/.test(mobile)) {
         return {
           code: 400,
@@ -936,7 +993,7 @@ export default [
           data: null,
         }
       }
-      
+
       const mobileData = mockCustomerProfile.mobile as MobileData
       // 如果设置为主号，先将原来的主号改为副号
       if (isPrimary) {
@@ -956,7 +1013,7 @@ export default [
       }
       mobileData.items.push(newItem)
       mobileData.isConflict = mobileData.items.length > 1
-      
+
       const result = {
         code: 200,
         message: '添加成功',
@@ -977,7 +1034,7 @@ export default [
       const body = parseBody(req)
       console.log('[Mock PUT] /api/customer/mobile/items - 解析后的 body:', body)
       const { id, mobile, relationTagId, relationTagName, relationTagIds, relationTagNames, businessTags, isPrimary } = body
-      
+
       if (!id) {
         return {
           code: 400,
@@ -985,7 +1042,7 @@ export default [
           data: null,
         }
       }
-      
+
       if (!mobile || !/^1[3-9]\d{9}$/.test(mobile)) {
         return {
           code: 400,
@@ -993,7 +1050,7 @@ export default [
           data: null,
         }
       }
-      
+
       const mobileData = mockCustomerProfile.mobile as MobileData
       const item = mobileData.items.find((i) => i.id === id)
       if (!item) {
@@ -1003,7 +1060,7 @@ export default [
           data: null,
         }
       }
-      
+
       // 如果设置为主号，先将原来的主号改为副号
       if (isPrimary !== undefined && isPrimary) {
         const currentPrimary = mobileData.items.find(i => i.isPrimary && i.id !== id)
@@ -1011,7 +1068,7 @@ export default [
           currentPrimary.isPrimary = false
         }
       }
-      
+
       item.mobile = mobile
       // 关系标签（单选）
       if (relationTagId !== undefined) {
@@ -1030,7 +1087,7 @@ export default [
         item.isPrimary = isPrimary
       }
       item.updateTime = new Date().toLocaleString('zh-CN')
-      
+
       const result = {
         code: 200,
         message: '更新成功',
@@ -1048,19 +1105,19 @@ export default [
       console.log('[Mock DELETE] 删除电话号码 - 请求:', req)
       console.log('[Mock DELETE] req.url:', req.url)
       console.log('[Mock DELETE] req 所有键:', Object.keys(req))
-      
+
       await delay(600)
-      
+
       // 从 URL 中提取 id
       let id: string | undefined
-      
+
       if (req.url && typeof req.url === 'string') {
         const match = req.url.match(/\/items\/([^/?]+)/)
         if (match && match[1]) {
           id = match[1]
         }
       }
-      
+
       if (!id && req.params) {
         if (typeof req.params === 'object') {
           id = req.params.id || req.params[0]
@@ -1069,9 +1126,9 @@ export default [
           }
         }
       }
-      
+
       console.log('[Mock DELETE] 提取的 id:', id)
-      
+
       if (!id) {
         console.error('[Mock DELETE] ❌ 无法提取 id')
         return {
@@ -1080,7 +1137,7 @@ export default [
           data: null,
         }
       }
-      
+
       const mobileData = mockCustomerProfile.mobile as MobileData
       const item = mobileData.items.find((i) => i.id === id)
       if (!item) {
@@ -1090,7 +1147,7 @@ export default [
           data: null,
         }
       }
-      
+
       if (item.isPrimary) {
         return {
           code: 400,
@@ -1098,10 +1155,10 @@ export default [
           data: null,
         }
       }
-      
+
       mobileData.items = mobileData.items.filter((i) => i.id !== id)
       mobileData.isConflict = mobileData.items.length > 1
-      
+
       const result = {
         code: 200,
         message: '删除成功',
@@ -1121,12 +1178,12 @@ export default [
       console.log('[Mock POST] 合并电话号码 - req.rawBody:', req.rawBody)
       console.log('[Mock POST] 合并电话号码 - req.data:', req.data)
       console.log('[Mock POST] 合并电话号码 - req.query:', req.query)
-      
+
       await delay(800)
       const body = parseBody(req)
       console.log('[Mock POST] 合并电话号码 - 解析后的 body:', body)
       const { ids } = body
-      
+
       if (!Array.isArray(ids) || ids.length === 0) {
         const errorResult = {
           code: 400,
@@ -1136,7 +1193,7 @@ export default [
         console.log('[Mock POST] 合并电话号码 - 返回错误:', errorResult)
         return errorResult
       }
-      
+
       const mobileData = mockCustomerProfile.mobile as MobileData
       const primaryItem = mobileData.items.find((i) => i.isPrimary)
       if (!primaryItem) {
@@ -1148,7 +1205,7 @@ export default [
         console.log('[Mock POST] 合并电话号码 - 返回错误:', errorResult)
         return errorResult
       }
-      
+
       // 深拷贝 mobileData 避免直接修改原始数据
       const updatedMobileData: MobileData = {
         items: mobileData.items.filter(
@@ -1158,7 +1215,7 @@ export default [
         editable: mobileData.editable,
       }
       updatedMobileData.isConflict = updatedMobileData.items.length > 1
-      
+
       const result = {
         code: 200,
         message: '合并成功',
@@ -1193,7 +1250,7 @@ export default [
       await delay(700)
       const body = parseBody(req)
       console.log('[Mock PUT] 更新维保记录标签 - 解析后的 body:', body)
-      
+
       // 从 URL 中提取 recordId
       let recordId: string | undefined
       if (req.url && typeof req.url === 'string') {
@@ -1202,7 +1259,7 @@ export default [
           recordId = match[1]
         }
       }
-      
+
       if (!recordId) {
         return {
           code: 400,
@@ -1210,7 +1267,7 @@ export default [
           data: null,
         }
       }
-      
+
       const { tags } = body
       if (!Array.isArray(tags)) {
         return {
@@ -1219,7 +1276,7 @@ export default [
           data: null,
         }
       }
-      
+
       const record = mockMaintenanceRecords.find((r) => r.id === recordId)
       if (!record) {
         return {
@@ -1228,9 +1285,9 @@ export default [
           data: null,
         }
       }
-      
+
       record.tags = tags
-      
+
       const result = {
         code: 200,
         message: '更新成功',
@@ -1249,7 +1306,7 @@ export default [
       await delay(700)
       const body = parseBody(req)
       console.log('[Mock PUT] 更新用户偏好标签 - 解析后的 body:', body)
-      
+
       const { tags } = body
       if (!Array.isArray(tags)) {
         return {
@@ -1258,13 +1315,13 @@ export default [
           data: null,
         }
       }
-      
+
       // 更新 mock 数据中的用户偏好标签
       if (!mockCustomerProfile.preferredCarModel.tags) {
         mockCustomerProfile.preferredCarModel.tags = []
       }
       mockCustomerProfile.preferredCarModel.tags = tags
-      
+
       const result = {
         code: 200,
         message: '更新成功',
@@ -1335,7 +1392,7 @@ export default [
       const body = parseBody(req)
       console.log('[Mock POST] /api/customer/conflicts/name-mobile - 解析后的 body:', body)
       const { selectedIds, note } = body
-      
+
       if (!selectedIds || !Array.isArray(selectedIds) || selectedIds.length === 0) {
         return {
           code: 400,
@@ -1343,7 +1400,7 @@ export default [
           data: null,
         }
       }
-      
+
       const result = {
         code: 200,
         message: '提交成功，后台管理人员将尽快处理',
@@ -1473,7 +1530,7 @@ export default [
     response: async (req: any) => {
       console.log('[Mock POST] /api/customer/fields/correction - 请求:', req)
       await delay(800)
-      
+
       // 解析请求体
       let body = req.body
       if (typeof body === 'string') {
@@ -1483,9 +1540,9 @@ export default [
           console.error('[Mock POST] /api/customer/fields/correction - 解析 body 失败:', e)
         }
       }
-      
+
       console.log('[Mock POST] /api/customer/fields/correction - 解析后的 body:', body)
-      
+
       // 验证必填字段
       if (!body.field || body.currentValue === undefined || body.correctValue === undefined) {
         return {
@@ -1494,7 +1551,7 @@ export default [
           data: { success: false },
         }
       }
-      
+
       // 验证值是否变化
       if (String(body.currentValue) === String(body.correctValue)) {
         return {
@@ -1503,7 +1560,7 @@ export default [
           data: { success: false },
         }
       }
-      
+
       // 手机号格式验证
       if (body.field === 'mobile' && !/^1[3-9]\d{9}$/.test(String(body.correctValue))) {
         return {
@@ -1512,7 +1569,7 @@ export default [
           data: { success: false },
         }
       }
-      
+
       const result = {
         code: 200,
         message: '纠错信息已提交，等待审核',
@@ -1529,7 +1586,7 @@ export default [
     response: async (req: any) => {
       console.log('[Mock PUT] /api/customer/basic-info - 请求:', req)
       await delay(800)
-      
+
       // 解析请求体
       let body = req.body
       if (typeof body === 'string') {
@@ -1539,9 +1596,9 @@ export default [
           console.error('[Mock PUT] /api/customer/basic-info - 解析 body 失败:', e)
         }
       }
-      
+
       console.log('[Mock PUT] /api/customer/basic-info - 解析后的 body:', body)
-      
+
       // 验证更改理由
       if (!body.reason || !body.reason.trim()) {
         return {
@@ -1550,7 +1607,7 @@ export default [
           data: { success: false },
         }
       }
-      
+
       // 手机号格式验证
       if (body.mobile && !/^1[3-9]\d{9}$/.test(String(body.mobile))) {
         return {
@@ -1559,7 +1616,7 @@ export default [
           data: { success: false },
         }
       }
-      
+
       // 年龄验证
       if (body.age !== undefined && (isNaN(Number(body.age)) || Number(body.age) < 0 || Number(body.age) > 150)) {
         return {
@@ -1568,7 +1625,7 @@ export default [
           data: { success: false },
         }
       }
-      
+
       const result = {
         code: 200,
         message: '提交成功，等待后台审核',
@@ -1639,16 +1696,16 @@ export default [
     response: async (req: any) => {
       console.log('[Mock GET] /api/customer/insurance/records - 请求:', req)
       await delay(800)
-      
+
       // 确保返回的数据符合规则
       let records = mockInsuranceRecords
-      
+
       // 再次验证数据（防止运行时数据被修改）
       if (!validateInsuranceRecords(records)) {
         console.error('[Mock] 保险记录数据验证失败，返回空数组')
         records = []
       }
-      
+
       const result = {
         code: 200,
         message: 'success',
