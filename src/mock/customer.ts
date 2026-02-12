@@ -1,5 +1,5 @@
 import { MockMethod } from 'vite-plugin-mock'
-import type { CustomerProfile, TagPool, MobileData, MobileItem, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, NameMobileConflict, Appointment, PlatformSource, InsuranceInfo, Opportunity, OperationLog, InsuranceRecord } from '@/types/customer'
+import type { CustomerProfile, TagPool, MobileData, MobileItem, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, NameMobileConflict, Appointment, PlatformSource, InsuranceInfo, Opportunity, OperationLog, InsuranceRecord, FinancialLoanRecord } from '@/types/customer'
 import { validateInsuranceRecords, normalizeInsuranceRecords } from './rules'
 
 // Mock 客户画像数据（包含冲突数据）
@@ -79,7 +79,7 @@ const mockCustomerProfile: CustomerProfile = {
     value: '8次保养，2次维修',
     isConflict: false,
   },
-  tags: ['VIP 车主', '热', 'PMP邀约', '本市', '人保', '精确报价', '亲子', '品酒'],
+  tags: ['VIP 车主', '热', 'PMP邀约', '本市', '人保', '精确报价', '亲子', '品酒', '贷款客户', '贷款', '贷款即将到期'],
   // 新增字段
   opportunityType: {
     value: '钻石客户',
@@ -114,7 +114,7 @@ const mockCustomerProfile: CustomerProfile = {
     ],
   },
   servicePreferences: {
-    tags: ['定期保养', '紧急维修', '质保期内'],
+    tags: ['定期保养', '紧急维修', '质保期内', '金融贷款'],
   },
   // 姓名+手机号冲突数据
   nameMobileConflict: [
@@ -360,7 +360,7 @@ const mockCompanyProfile: CustomerProfile = {
     value: '25次保养，5次维修',
     isConflict: false,
   },
-  tags: ['大客户', '高价值', '餐饮行业'],
+  tags: ['大客户', '高价值', '餐饮行业', '全款客户'],
   customerType: {
     value: '公司',
     isConflict: false,
@@ -380,10 +380,15 @@ const mockCompanyProfile: CustomerProfile = {
 
 // Mock 标签池数据（按分类组织，参考客户系统已知标签）
 const mockTagPool: TagPool[] = [
-  // 意向级别 - 灰蓝色系
-  { id: 'intent_cold', name: '冷', category: '意向级别', color: '#A8B5C0' },
-  { id: 'intent_warm', name: '暖', category: '意向级别', color: '#D8C8A8' },
-  { id: 'intent_hot', name: '热', category: '意向级别', color: '#D4B8B8' },
+  // 意向级别 - 蓝紫色系
+  { id: 'intent_h', name: 'H', category: '意向级别', color: '#B8C8E8' },
+  { id: 'intent_a', name: 'A', category: '意向级别', color: '#B8C8E8' },
+  { id: 'intent_b', name: 'B', category: '意向级别', color: '#B8C8E8' },
+  { id: 'intent_c', name: 'C', category: '意向级别', color: '#B8C8E8' },
+  { id: 'intent_o', name: 'O', category: '意向级别', color: '#B8C8E8' },
+  { id: 'intent_loan', name: '贷款客户', category: '意向级别', color: '#B8C8E8' },
+  { id: 'intent_loan_simple', name: '贷款', category: '意向级别', color: '#B8C8E8' },
+  { id: 'intent_full', name: '全款客户', category: '意向级别', color: '#B8C8E8' },
 
   // SC【必选】- 灰绿色系
   { id: 'sc_pmp', name: 'PMP邀约', category: 'SC【必选】', required: true, color: '#B8C8B8' },
@@ -681,6 +686,46 @@ const mockOpportunities: Opportunity[] = [
     description: '活动内容：对网关控制单元（蓄电池传感器）重新编程\n活动完成率：30%\n距离目标差值（车）：30\n活动属性：30',
     source: 'CRM系统',
   },
+]
+
+// Mock 金融贷款记录
+const mockFinancialLoanRecords: FinancialLoanRecord[] = [
+  {
+    id: 'L001',
+    vehicleModel: 'Porsche 911 2024款',
+    startDate: '2024-01-15',
+    expectedExpiryMonths: 36,
+    loanInfo: '首付30%，年化利率4.5%',
+    bank: '招商银行',
+    repaymentDay: 15,
+    period: '2024-01 - 2027-01',
+    status: '正常',
+    source: 'DMS',
+  },
+  {
+    id: 'L002',
+    vehicleModel: 'Porsche Taycan 2024款',
+    startDate: '2023-01-10',
+    expectedExpiryMonths: 24,
+    loanInfo: '融资租赁，月供1.5万',
+    bank: '平安银行',
+    repaymentDay: 10,
+    period: '2023-01 - 2025-01',
+    status: '即将到期',
+    source: 'BDC',
+  },
+  {
+    id: 'L003',
+    vehicleModel: 'Porsche Cayenne 2023款',
+    startDate: '2023-05-20',
+    expectedExpiryMonths: 12,
+    loanInfo: '低息贷款，已还清10期',
+    bank: '中国银行',
+    repaymentDay: 20,
+    period: '2023-05 - 2024-05',
+    status: '即将到期',
+    source: 'DMS',
+  }
 ]
 
 // 模拟网络延迟
@@ -1713,6 +1758,35 @@ export default [
       }
       console.log('[Mock GET] /api/customer/insurance/records - 返回:', result)
       console.log('[Mock GET] /api/customer/insurance/records - 数据条数:', records.length)
+      return result
+    },
+  },
+  // 获取金融贷款记录
+  {
+    url: '/api/customer/loan/records',
+    method: 'get',
+    response: async (req: any) => {
+      console.log('[Mock GET] /api/customer/loan/records - 请求:', req)
+      await delay(800)
+
+      const { type } = req.query || {}
+      let records = [...mockFinancialLoanRecords]
+
+      // 如果是"即将到期"的tab，可以过滤状态
+      if (type === 'expiring') {
+        records = records.filter(r => r.status === '即将到期')
+      }
+
+      const result = {
+        code: 200,
+        message: 'success',
+        data: {
+          list: records,
+          hasMore: false,
+          total: records.length
+        },
+      }
+      console.log('[Mock GET] /api/customer/loan/records - 返回:', result)
       return result
     },
   },

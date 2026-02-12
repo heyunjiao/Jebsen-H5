@@ -122,6 +122,20 @@ export interface InsuranceRecord {
   source?: string // 来源系统
 }
 
+// 金融贷款记录类型
+export interface FinancialLoanRecord {
+  id: string
+  vehicleModel: string // 车辆
+  startDate: string // 开始日期
+  expectedExpiryMonths: number // 预期到期月数
+  loanInfo: string // 贷款相关信息
+  bank: string // 银行
+  repaymentDay: number // 还款日
+  period: string // 起始月 - 到日月
+  status: '正常' | '即将到期' | '已结清' | '逾期' // 状态
+  source?: string // 来源系统
+}
+
 // 姓名+手机号冲突数据
 export interface NameMobileConflict {
   id: string

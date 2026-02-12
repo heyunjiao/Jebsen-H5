@@ -80,7 +80,7 @@ export const mockCustomerProfile: CustomerProfile = {
     value: '8次保养，2次维修',
     isConflict: false,
   },
-  tags: ['热', 'PMP邀约', '本市', '人保', '精确报价', '亲子', '品酒'],
+  tags: ['热', 'PMP邀约', '本市', '人保', '精确报价', '亲子', '品酒', '贷款客户'],
   // 新增字段
   customerType: {
     value: '个人',
@@ -506,6 +506,8 @@ export const mockTagPool: TagPool[] = [
   { id: 'sc_old_customer_repurchase', name: '老客重购', category: 'SC【必选】', required: true, color: '#B8C8B8' },
   { id: 'sc_natural_flow', name: '自然客流', category: 'SC【必选】', required: true, color: '#B8C8B8' },
   { id: 'sc_loan', name: '贷款', category: 'SC【必选】', required: true, color: '#B8C8B8' },
+  { id: 'sc_loan_customer', name: '贷款客户', category: 'SC【必选】', required: true, color: '#B8C8B8' },
+  { id: 'sc_loan_expiring', name: '贷款即将到期', category: 'SC【必选】', required: true, color: '#B8C8B8' },
   { id: 'sc_sales_invitation', name: '销售邀约', category: 'SC【必选】', required: true, color: '#B8C8B8' },
   { id: 'sc_public_plate', name: '公牌', category: 'SC【必选】', required: true, color: '#B8C8B8' },
   { id: 'sc_other', name: '其他', category: 'SC【必选】', required: true, color: '#B8C8B8' },
@@ -651,5 +653,45 @@ export const mockMaintenanceRecords: MaintenanceRecord[] = [
     tags: ['质保期内'],
     source: 'DMS',
   },
+]
+
+// Mock 金融贷款记录
+export const mockFinancialLoanRecords = [
+  {
+    id: 'L001',
+    vehicleModel: 'Porsche 911 2024款',
+    startDate: '2024-01-15',
+    expectedExpiryMonths: 36,
+    loanInfo: '首付30%，年化利率4.5%',
+    bank: '招商银行',
+    repaymentDay: 15,
+    period: '2024-01 - 2027-01',
+    status: '正常',
+    source: 'DMS',
+  },
+  {
+    id: 'L002',
+    vehicleModel: 'Porsche Cayenne 2024款',
+    startDate: '2023-06-20',
+    expectedExpiryMonths: 24,
+    loanInfo: '首付40%，年化利率4.2%',
+    bank: '建设银行',
+    repaymentDay: 20,
+    period: '2023-06 - 2025-06',
+    status: '即将到期',
+    source: 'DMS',
+  },
+  {
+    id: 'L003',
+    vehicleModel: 'Porsche Taycan 2024款',
+    startDate: '2022-11-10',
+    expectedExpiryMonths: 36,
+    loanInfo: '首付20%，年化利率4.8%',
+    bank: '工商银行',
+    repaymentDay: 10,
+    period: '2022-11 - 2025-11',
+    status: '正常',
+    source: 'BDC',
+  }
 ]
 

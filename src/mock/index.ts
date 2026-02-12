@@ -4,7 +4,7 @@
  */
 import type { AxiosRequestConfig, AxiosResponse } from 'axios'
 import type { CustomerProfile, TagPool, MobileData, MobileItem, MaintenanceRecord, Appointment, PlatformSource, Opportunity, OperationLog, InsuranceRecord, MarketingCampaign } from '@/types/customer'
-import { mockCustomerProfile, mockCompanyProfile, mockTagPool, mockRelationTagPool, mockMaintenanceRecords } from './data'
+import { mockCustomerProfile, mockCompanyProfile, mockTagPool, mockRelationTagPool, mockMaintenanceRecords, mockFinancialLoanRecords } from './data'
 import { normalizeInsuranceRecords, validateInsuranceRecords } from './rules'
 
 // 模拟网络延迟
@@ -1236,6 +1236,29 @@ export async function mockRequestInterceptor(
         code: 200,
         message: 'success',
         data: mockOperationLogs,
+      }
+    }
+    // GET /api/customer/loan/records
+    else if (method === 'get' && fullPath.includes('/customer/loan/records')) {
+      await delay(800)
+      const params = config.params || {}
+      const page = Number(params.page) || 1
+      const pageSize = Number(params.pageSize) || 5
+
+      const total = mockFinancialLoanRecords.length
+      const startIndex = (page - 1) * pageSize
+      const endIndex = startIndex + pageSize
+      const pageRecords = mockFinancialLoanRecords.slice(startIndex, endIndex)
+      const hasMore = endIndex < total
+
+      mockResponse = {
+        code: 200,
+        message: 'success',
+        data: {
+          list: pageRecords,
+          hasMore,
+          total,
+        },
       }
     }
 

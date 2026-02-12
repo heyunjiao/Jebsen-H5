@@ -72,6 +72,19 @@
         >
           {{ latestOperationText }} {{ formatOperationTime(latestOperationDisplay.operationTime) }}
         </van-notice-bar>
+
+        <!-- 贷款即将到期提示 -->
+        <!-- <van-notice-bar
+          v-if="isLoanExpiring"
+          left-icon="clock-o"
+          color="#ED6A0C"
+          background="#FFF7E8"
+          class="alert-bar loan-alert-bar"
+          mode="link"
+          @click="activeTab = 'loan'"
+        >
+          检测到名下金融贷款即将到期，请及时跟进续约情况
+        </van-notice-bar> -->
       </div>
 
       <!-- 核心画像层：内容与个人视图完全一致 -->
@@ -203,7 +216,7 @@
         </div>
         <div class="tags-list-container">
           <span
-            v-for="(tag, index) in (selectedHandler?.tags || customerStore.profile?.tags)"
+            v-for="(tag, index) in portraitTags"
             :key="index"
             class="tag-item-custom"
             :class="getTagCustomClass(tag)"
@@ -273,6 +286,13 @@
           >
             线下活动
           </div>
+          <div 
+            class="tab-nav-item" 
+            :class="{ active: activeTab === 'loan' }"
+            @click="activeTab = 'loan'"
+          >
+            金融贷款
+          </div>
         </div>
         
         <!-- Tab 内容 -->
@@ -288,6 +308,9 @@
           </div>
           <div v-if="activeTab === 'marketing'" class="tab-content">
             <MarketingCampaigns />
+          </div>
+          <div v-if="activeTab === 'loan'" class="tab-content">
+            <FinancialLoan type="all" />
           </div>
         </div>
       </div>
@@ -855,6 +878,7 @@ import Maintenance from '@/views/Maintenance.vue'
 import MaintenanceRecords from '@/views/MaintenanceRecords.vue'
 import CommunicationRecords from '@/views/CommunicationRecords.vue'
 import MarketingCampaigns from '@/views/MarketingCampaigns.vue'
+import FinancialLoan from '@/views/FinancialLoan.vue'
 import ConflictResolver from '@/components/business/ConflictResolver.vue'
 import PlatformFlow from '@/components/business/PlatformFlow.vue'
 import MobileEditor from '@/components/business/MobileEditor.vue'
@@ -922,6 +946,7 @@ const loadAllData = async (customerId?: string) => {
       customerStore.fetchPlatformSources(customerId),
       customerStore.fetchOpportunities(customerId),
       customerStore.fetchOperationLogs(customerId),
+      customerStore.fetchFinancialLoanRecordsPage(1, 10, customerId),
     ])
   } catch (error) {
     console.error('[Home] 数据加载失败:', error)
@@ -1003,6 +1028,20 @@ const formatMobile = (mobile: string): string => {
   // 否则保持原样
   return mobile
 }
+
+const isLoanExpiring = computed(() => {
+  return customerStore.financialLoanRecords.some(r => r.status === '即将到期')
+})
+
+// 画像标签（包含动态计算的“贷款客户”）
+const portraitTags = computed(() => {
+  const profileTags = selectedHandler.value?.tags || customerStore.profile?.tags || []
+  const tags = [...profileTags]
+  if (customerStore.financialLoanRecords.length > 0 && !tags.includes('贷款客户')) {
+    tags.push('贷款客户')
+  }
+  return tags
+})
 
 // 电话相关
 const displayedPhones = computed(() => {
@@ -1113,6 +1152,9 @@ const displayedHeaderTags = computed(() => {
     const opportunityTypes = opps.map(opp => opp.type)
     tags.push(...opportunityTypes)
   }
+
+  // 3. 商机标签处理
+  // 保持 header-tags 区域仅显示商机相关标签，移除贷款信息
   
   // 去重，确保每个标签只显示一次
   return Array.from(new Set(tags))
@@ -1124,6 +1166,7 @@ const getHeaderTagClass = (tag: string) => {
   if ((tag.includes('VIP') && tag.includes('车主')) || tag === '钻石客户') {
     return 'vip-tag'
   }
+  // 移除所有贷款相关的 Header Badge 逻辑
   // 客户类型（个人客户、公司客户）和其他所有商机类型使用 biz-badge 样式（深灰半透明背景，白色文字）
   return 'biz-badge'
 }
@@ -1147,6 +1190,10 @@ const getTagIcon = (tag: string): string | null => {
   // VIP 车主显示皇冠图标
   if (tag.includes('VIP') && tag.includes('车主')) {
     return 'medal-o'
+  }
+  // 贷款即将到期显示时钟图标
+  if (tag === '贷款即将到期') {
+    return 'clock-o'
   }
   return null
 }
@@ -1219,6 +1266,11 @@ const getTagCustomClass = (tag: string) => {
 
 // 获取标签的样式对象（用于内联样式）
 const getTagStyle = (tag: string) => {
+  // 贷款客户：统一采用业务类标签的灰绿色调（与SC【必选】类标签保持一致，确保整体感）
+  if (tag === '贷款客户') {
+    return getTagColors('#B8C8B8')
+  }
+
   // 热度极高：红色样式
   if (tag.includes('热度极高') || tag.includes('热度')) {
     return {
@@ -2418,6 +2470,20 @@ onMounted(async () => {
 }
 
 .biz-badge .tag-icon {
+  color: white;
+}
+
+.warning-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  background: #ED6A0C; // 使用与 NoticeBar 一致的警告橘色
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  font-weight: 800;
+}
+
+.warning-badge .tag-icon {
   color: white;
 }
 
@@ -4726,6 +4792,11 @@ onMounted(async () => {
       }
     }
   }
+}
+
+.warning-text {
+  color: #ED6A0C !important;
+  font-weight: 600;
 }
 </style>
 

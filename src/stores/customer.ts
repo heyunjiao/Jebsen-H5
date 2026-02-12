@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { CustomerProfile, TagPool, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, ConflictResolution, Appointment, PlatformSource, Opportunity, OperationLog, InsuranceRecord, MarketingCampaign } from '@/api/customer'
+import type { CustomerProfile, TagPool, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, ConflictResolution, Appointment, PlatformSource, Opportunity, OperationLog, InsuranceRecord, MarketingCampaign, FinancialLoanRecord } from '@/api/customer'
 import { customerApi } from '@/api/customer'
 import { showLoadingToast, closeToast, showToast } from 'vant'
 
@@ -17,6 +17,7 @@ export const useCustomerStore = defineStore('customer', () => {
   const opportunities = ref<Opportunity[]>([])
   const operationLogs = ref<OperationLog[]>([])
   const marketingCampaigns = ref<MarketingCampaign[]>([])
+  const financialLoanRecords = ref<FinancialLoanRecord[]>([])
   const loading = ref(false)
 
   // 设置经办人
@@ -661,6 +662,34 @@ export const useCustomerStore = defineStore('customer', () => {
     marketingCampaigns.value = []
   }
 
+  // 获取金融贷款记录（支持分页）
+  const fetchFinancialLoanRecordsPage = async (page: number = 1, pageSize: number = 5, customerId?: string): Promise<boolean> => {
+    try {
+      const res = await customerApi.getFinancialLoanRecords({
+        customerId,
+        page,
+        pageSize,
+      })
+      if (res.code === 200) {
+        if (page === 1) {
+          financialLoanRecords.value = [...res.data.list]
+        } else {
+          financialLoanRecords.value = [...financialLoanRecords.value, ...res.data.list]
+        }
+        return res.data.hasMore
+      }
+      return false
+    } catch (error: any) {
+      console.error('获取金融贷款记录失败:', error)
+      return false
+    }
+  }
+
+  // 清空金融贷款记录
+  const clearFinancialLoanRecords = () => {
+    financialLoanRecords.value = []
+  }
+
   return {
     profile,
     tagPool,
@@ -674,6 +703,7 @@ export const useCustomerStore = defineStore('customer', () => {
     opportunities,
     operationLogs,
     marketingCampaigns,
+    financialLoanRecords,
     loading,
     fetchProfile,
     fetchTagPool,
@@ -683,6 +713,8 @@ export const useCustomerStore = defineStore('customer', () => {
     clearInsuranceRecords,
     fetchMarketingCampaignsPage,
     clearMarketingCampaigns,
+    fetchFinancialLoanRecordsPage,
+    clearFinancialLoanRecords,
     fetchTransactions,
     fetchVehicles,
     fetchAssets,

@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
-import type { CustomerProfile, TagPool, SourceDetail, MobileItem, MobileData, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, ConflictResolution, Appointment, PlatformSource, Opportunity, OperationLog, InsuranceRecord, MarketingCampaign } from '@/types/customer'
+import type { CustomerProfile, TagPool, SourceDetail, MobileItem, MobileData, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, ConflictResolution, Appointment, PlatformSource, Opportunity, OperationLog, InsuranceRecord, MarketingCampaign, FinancialLoanRecord } from '@/types/customer'
 import { mockRequestInterceptor } from '@/mock'
 
 // API 响应基础类型
@@ -10,7 +10,7 @@ export interface ApiResponse<T> {
 }
 
 // 导出类型供外部使用
-export type { CustomerProfile, TagPool, SourceDetail, MobileItem, MobileData, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, ConflictResolution, Appointment, PlatformSource, Opportunity, OperationLog, InsuranceRecord, MarketingCampaign }
+export type { CustomerProfile, TagPool, SourceDetail, MobileItem, MobileData, MaintenanceRecord, TransactionRecord, VehicleRelation, Asset, ConflictResolution, Appointment, PlatformSource, Opportunity, OperationLog, InsuranceRecord, MarketingCampaign, FinancialLoanRecord }
 
 // 创建 axios 实例
 const request = axios.create({
@@ -32,7 +32,7 @@ request.interceptors.request.use(
     if (mockResponse) {
       // 如果匹配到 Mock，修改请求配置，使用一个特殊的 adapter
       // 这个 adapter 会直接返回 Mock 响应，而不发送真实请求
-      ;(config as any).adapter = async () => {
+      ; (config as any).adapter = async () => {
         return mockResponse
       }
     }
@@ -50,7 +50,7 @@ request.interceptors.response.use(
     const res = response.data
     const url = response.config.url || ''
     const fullUrl = response.config.url || response.request?.responseURL || url
-    
+
     console.log(`[API] 响应拦截器处理: ${fullUrl}`, {
       dataType: typeof res,
       isString: typeof res === 'string',
@@ -59,7 +59,7 @@ request.interceptors.response.use(
       hasCode: typeof res === 'object' && res !== null && 'code' in res,
       firstChars: typeof res === 'string' ? res.substring(0, 50) : undefined,
     })
-    
+
     // 检查是否是 HTML 响应（Mock 未生效，返回了 HTML 页面）
     if (typeof res === 'string') {
       if (res.includes('<!DOCTYPE') || res.includes('<html') || res.trim().startsWith('<!')) {
@@ -68,7 +68,7 @@ request.interceptors.response.use(
         return Promise.reject(new Error('Mock 未生效，返回了 HTML 页面'))
       }
     }
-    
+
     // 处理空对象的情况（Mock 未生效时的 fallback）
     if (!res || (typeof res === 'object' && Object.keys(res).length === 0)) {
       console.warn(`[API] 响应数据为空: ${url}`, response)
@@ -78,7 +78,7 @@ request.interceptors.response.use(
       }
       return Promise.reject(new Error('响应数据为空，请检查 Mock 配置'))
     }
-    
+
     // 如果 res 不是对象，或者没有 code 属性，可能是 Mock 格式问题
     if (typeof res !== 'object' || !('code' in res)) {
       console.warn(`[API] 响应格式异常: ${url}`, res)
@@ -111,14 +111,14 @@ request.interceptors.response.use(
         data: res,
       }
     }
-    
+
     // 检查 code 是否为 200
     if (res.code !== 200) {
       const errorMessage = res.message || '请求失败'
       console.error(`[API] 请求失败: ${url}`, res)
       return Promise.reject(new Error(errorMessage))
     }
-    
+
     // 返回标准格式的响应
     return res
   },
@@ -126,7 +126,7 @@ request.interceptors.response.use(
     // 改进错误处理，提供更详细的错误信息
     const url = error.config?.url || 'unknown'
     console.error(`[API] 请求错误: ${url}`, error)
-    
+
     if (error.response) {
       // 服务器返回了错误状态码
       const res = error.response.data
@@ -355,6 +355,17 @@ export const customerApi = {
     pageSize?: number
   }): Promise<ApiResponse<{ list: MarketingCampaign[]; hasMore: boolean; total: number }>> => {
     return request.get('/customer/marketing-campaigns', {
+      params,
+    })
+  },
+
+  // 获取金融贷款记录（支持分页）
+  getFinancialLoanRecords: (params?: {
+    customerId?: string
+    page?: number
+    pageSize?: number
+  }): Promise<ApiResponse<{ list: FinancialLoanRecord[]; hasMore: boolean; total: number }>> => {
+    return request.get('/customer/loan/records', {
       params,
     })
   },
