@@ -1,8 +1,15 @@
 <template>
   <div class="home-container">
 
-    <!-- 强力便捷切换工具 -->
-    <div class="fixed-account-toggle" @click="toggleAccountType">
+    <!-- 强力便捷切换工具 (支持拖拽) -->
+    <div 
+      class="fixed-account-toggle" 
+      :style="{ top: floatingPos.y + 'px' }"
+      @touchstart="onTouchStart"
+      @touchmove.prevent="onTouchMove"
+      @touchend="onTouchEnd"
+      @click="handleToggleClick"
+    >
       <van-icon name="exchange" class="toggle-icon" />
       <span>{{ isCompany ? '回个人' : '看公司' }}</span>
     </div>
@@ -20,11 +27,13 @@
     <div v-if="!customerStore.loading && customerStore.profile" class="first-screen">
       
       <!-- [新增层级] 公司主体信息层：仅在公司账户下显示 -->
+
+      <!-- [新增层级] 公司主体信息层：仅在公司账户下显示 -->
       <div v-if="isCompany" class="company-identity-layer">
         <div class="company-basic-info">
           <div class="comp-icon"><van-icon name="shop-o" /></div>
           <div class="comp-main">
-            <h2 class="comp-name">{{ customerStore.profile.name.value }}</h2>
+            <h2 class="comp-name">{{ customerStore.profile?.name?.value }}</h2>
             <div class="comp-meta">企业统一社会信用代码：91310115MA1K...</div>
           </div>
         </div>
@@ -34,7 +43,7 @@
           <div class="bar-label">选择经办人：</div>
           <div class="handler-chips-wrapper">
             <div 
-              v-for="handler in customerStore.profile.handlers" 
+              v-for="handler in customerStore.profile?.handlers" 
               :key="handler.id"
               class="handler-pill"
               :class="{ active: customerStore.profile.selectedHandlerId === handler.id }"
@@ -100,6 +109,44 @@
             <div class="user-name-row">
               <div class="name-left">
                 <h1>{{ currentAgentName }}</h1>
+                <van-popover
+                  v-model:show="showSyncInfoPopover"
+                  placement="bottom-start"
+                  trigger="click"
+                >
+                  <div class="sync-details-popover">
+                    <div class="sync-header">
+                      <div class="sync-title-row">
+                        <van-icon name="shield-o" />
+                        <span>数据状态监控</span>
+                      </div>
+                      <div class="sync-time-subtitle">同步至: {{ syncTime }}</div>
+                    </div>
+                    <div class="sync-source-list">
+                      <div class="source-item" v-for="source in platformSyncStatus" :key="source.name">
+                        <div class="source-info">
+                          <div class="source-icon-box">
+                            <van-icon :name="source.name.includes('DMS') ? 'setting-o' : source.name.includes('BDC') ? 'phone-o' : source.name.includes('Voucher') ? 'coupon-o' : source.name.includes('手工') ? 'description-o' : 'service-o'" />
+                          </div>
+                          <span class="source-name">{{ source.name }}</span>
+                        </div>
+                        <div class="status-badge" :class="source.status === 'success' ? 'is-success' : 'is-error'">
+                          <span class="status-dot-mini"></span>
+                          {{ source.status === 'success' ? '正常' : '异常' }}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="sync-footer">
+                      <i class="footer-i">i</i>
+                      <span>业务数据 T+1 同步，若与最新操作有偏差属正常现象。</span>
+                    </div>
+                  </div>
+                  <template #reference>
+                    <div class="sync-status-icon-wrapper" :class="isSyncHealthy ? 'is-healthy' : 'is-error'">
+                      <van-icon name="bulb-o" />
+                    </div>
+                  </template>
+                </van-popover>
                 <van-icon name="cluster-o" class="trace-icon" @click="showPlatformFlow = true" />
               </div>
 
@@ -906,8 +953,62 @@ const operationLogsLoading = ref(false)
 const showOpportunityDialog = ref(false)
 const showVehicleDialog = ref(false)
 const showAssetDialog = ref(false)
+const showSyncInfoPopover = ref(false)
+const syncTime = ref('2026-03-01 06:00')
+
+// 模拟平台同步状态
+const platformSyncStatus = ref([
+  { name: 'DMS系统', status: 'success' },
+  { name: 'BDC系统', status: 'success' },
+  { name: 'Voucher系统', status: 'success' },
+  { name: '手工上传', status: 'success' }
+])
+
+// 是否整体健康（如果有一个异常则为不健康）
+const isSyncHealthy = computed(() => {
+  return !platformSyncStatus.value.some(s => s.status === 'error')
+})
+
 const router = useRouter()
 const route = useRoute()
+
+// 悬浮球拖拽逻辑
+const floatingPos = ref({ x: 0, y: 200 })
+const isDragging = ref(false)
+let startY = 0
+let initialY = 0
+
+const onTouchStart = (e: TouchEvent) => {
+  isDragging.value = false
+  startY = e.touches[0].clientY
+  initialY = floatingPos.value.y
+}
+
+const onTouchMove = (e: TouchEvent) => {
+  const moveY = e.touches[0].clientY - startY
+  if (Math.abs(moveY) > 5) {
+    isDragging.value = true
+    let newY = initialY + moveY
+    // 限制范围
+    const h = window.innerHeight
+    if (newY < 80) newY = 80
+    if (newY > h - 120) newY = h - 120
+    floatingPos.value.y = newY
+  }
+}
+
+const onTouchEnd = () => {
+  // 延迟重置拖拽状态，让 click 事件能够正确识别距离上一次移动的时间
+  setTimeout(() => {
+    isDragging.value = false
+  }, 100)
+}
+
+const handleToggleClick = () => {
+  if (!isDragging.value) {
+    toggleAccountType()
+  }
+}
 
 // 切换账户类型
 const toggleAccountType = () => {
@@ -2098,7 +2199,6 @@ onMounted(async () => {
 .fixed-account-toggle {
   position: fixed;
   right: 0;
-  top: 25%;
   z-index: 9999;
   background: var(--accent-gold);
   color: black;
@@ -2112,6 +2212,13 @@ onMounted(async () => {
   font-weight: 700;
   font-size: 11px;
   cursor: pointer;
+  touch-action: none; // 禁止触发系统拖拽/滚动
+  transition: opacity 0.2s, background-color 0.2s;
+
+  &:active {
+    background: #a5845b;
+    opacity: 0.9;
+  }
   
   .toggle-icon {
     font-size: 18px;
@@ -2375,7 +2482,7 @@ onMounted(async () => {
     }
 
     .trace-icon {
-      margin-left: 6px;
+      margin-left: 0;
       font-size: 18px;
       color: rgba(255, 255, 255, 0.9);
       cursor: pointer;
@@ -2385,6 +2492,37 @@ onMounted(async () => {
       &:active {
         opacity: 0.7;
         transform: scale(0.9);
+      }
+    }
+
+    .sync-status-icon-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      
+      &.is-healthy {
+        background: rgba(7, 193, 96, 0.2);
+        color: #07c160;
+      }
+      
+      &.is-error {
+        background: rgba(238, 10, 36, 0.2);
+        color: #ee0a24;
+        animation: status-pulse-red 2s infinite;
+      }
+
+      &:active {
+        transform: scale(0.9);
+      }
+
+      .van-icon {
+        font-size: 14px;
+        font-weight: bold;
       }
     }
   }
@@ -3299,7 +3437,6 @@ onMounted(async () => {
     flex: 1;
     overflow-y: auto;
     padding-top: 10px;
-    min-height: 0;
   }
   
   .popup-footer {
@@ -3316,7 +3453,7 @@ onMounted(async () => {
       height: 40px;
     }
   }
-  
+
   .opportunity-item {
     background: white;
     border-radius: 4px;
@@ -3622,12 +3759,11 @@ onMounted(async () => {
     }
   }
   
-  // 空状态样式
-  .empty-state {
-    padding: 40px 0;
-    text-align: center;
+    .empty-state {
+      padding: 40px 0;
+      text-align: center;
+    }
   }
-}
 
 // Tab 容器（统一tab和内容的视觉连接）
 .tab-container {
@@ -4260,7 +4396,6 @@ onMounted(async () => {
       height: 40px;
     }
   }
-}
 
 .mobile-preview {
   padding: 16px;
@@ -4797,6 +4932,245 @@ onMounted(async () => {
 .warning-text {
   color: #ED6A0C !important;
   font-weight: 600;
+}
+
+.sync-info-content {
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.6;
+  max-width: 180px;
+  color: #fff;
+  }
+}
+
+// 同步状态弹出层高级样式
+.sync-details-popover {
+  padding: 0;
+  min-width: 240px;
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+
+  .sync-header {
+    background: #f8f9fa;
+    padding: 14px 16px;
+    border-bottom: 1px solid #edf2f7;
+    
+    .sync-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+      
+      .van-icon {
+        font-size: 16px;
+        color: #94724A;
+      }
+      
+      span {
+        font-size: 14px;
+        font-weight: 700;
+        color: #2d3748;
+      }
+    }
+    
+    .sync-time-subtitle {
+      font-size: 11px;
+      color: #718096;
+      font-weight: 500;
+      padding-left: 24px;
+    }
+  }
+
+  .sync-source-list {
+    padding: 8px 0;
+    display: flex;
+    flex-direction: column;
+
+    .source-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      transition: background 0.2s;
+      
+      &:hover {
+        background: #f7fafc;
+      }
+      
+      .source-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        
+        .source-icon-box {
+          width: 28px;
+          height: 28px;
+          background: #edf2f7;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #4a5568;
+          font-size: 14px;
+        }
+        
+        .source-name {
+          font-size: 13px;
+          font-weight: 600;
+          color: #2d3748;
+        }
+      }
+
+      .status-badge {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        
+        &.is-success {
+          background: #f0fff4;
+          color: #2f855a;
+        }
+        
+        &.is-error {
+          background: #fff5f5;
+          color: #c53030;
+          animation: status-pulse-red 2s infinite;
+        }
+        
+        .status-dot-mini {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: currentColor;
+        }
+      }
+    }
+  }
+
+  .sync-footer {
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-top: 1px solid #edf2f7;
+    font-size: 11px;
+    color: #a0aec0;
+    line-height: 1.5;
+    display: flex;
+    gap: 8px;
+    
+    .footer-i {
+      flex-shrink: 0;
+      width: 14px;
+      height: 14px;
+      background: #e2e8f0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      color: #718096;
+      font-weight: 800;
+      font-style: normal;
+    }
+  }
+}
+
+@keyframes status-pulse-red {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.95); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes sync-flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes status-flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+</style>
+
+<!-- 全局样式：深度定制 Teleport 组件 -->
+<style lang="scss">
+.sync-details-popover {
+  padding: 0;
+  width: 125px !important;
+  background: #ffffff !important;
+  border-radius: 6px !important;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+  border: 1px solid rgba(148, 114, 74, 0.25);
+
+  .sync-header {
+    background: #fdfaf6;
+    padding: 6px 8px;
+    border-bottom: 1px solid #f1e9de;
+    
+    .sync-title-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 1px;
+      opacity: 0.7;
+      
+      .van-icon { font-size: 9px; color: #94724a; }
+      span { font-size: 9px; font-weight: 600; color: #1a1a1a; }
+    }
+    
+    .sync-time-subtitle {
+      font-size: 11px;
+      color: #94724a;
+      font-weight: 900;
+      display: block;
+      letter-spacing: -0.2px;
+    }
+  }
+
+  .sync-source-list {
+    padding: 2px 0;
+    
+    .source-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 3px 8px;
+      
+      .source-info {
+        .source-name { font-size: 9px; color: #333; font-weight: 500; }
+      }
+
+      .status-badge {
+        font-size: 8px;
+        padding: 0 3px;
+        border-radius: 2px;
+        transform: scale(0.85);
+        transform-origin: right;
+        
+        &.is-success { color: #52c41a; background: #f6ffed; }
+        &.is-error { color: #f5222d; background: #fff1f0; animation: sync-flicker 2s infinite; }
+      }
+    }
+  }
+
+  .sync-footer {
+    padding: 3px 8px;
+    background: #fafafa;
+    border-top: 1px solid #f0f0f0;
+    font-size: 7px;
+    color: #bbb;
+    text-align: right;
+  }
+}
+
+.sync-status-icon-wrapper.is-error {
+  animation: status-pulse-red 1.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 </style>
 
